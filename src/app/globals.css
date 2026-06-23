@@ -1,0 +1,57 @@
+@import "tailwindcss";
+
+/* Leland Mills theme — heritage industrial, warm, agricultural.
+   Brand colors: Primary dark #222831, Accent gold #FFB800,
+   Feed Mill Green #3D6B3E, Teal accent #00B4A6. */
+@theme inline {
+  --color-background: #faf9f7;
+  --color-foreground: #222831;
+  --color-accent: #00B4A6;
+  --color-accent-hover: #009e92;
+  --color-accent-light: #e6fffb;
+  --color-gold: #FFB800;
+  --color-gold-hover: #e5a800;
+  --color-mill-green: #3D6B3E;
+  --color-mill-green-hover: #345a35;
+  --color-surface: #f3f1ed;
+  --color-border: #e5e0d8;
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-background: #0a0a0a;
+    --color-foreground: #ededed;
+    --color-accent: #00B4A6;
+    --color-accent-hover: #00cdbd;
+    --color-accent-light: #0d2d2b;
+    --color-gold: #FFB800;
+    --color-gold-hover: #ffc933;
+    --color-mill-green: #4a8a4c;
+    --color-mill-green-hover: #5da460;
+    --color-surface: #141414;
+    --color-border: #262626;
+  }
+}
+
+body {
+  background: var(--color-background);
+  color: var(--color-foreground);
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}

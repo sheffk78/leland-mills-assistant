@@ -1,0 +1,93 @@
+// Prisma schema for the Leland Mills Company AI Assistant.
+// Learn more: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  ADMIN
+  STAFF
+  DRIVER
+}
+
+enum MessageRole {
+  USER
+  ASSISTANT
+  SYSTEM
+}
+
+model User {
+  id        String   @id @default(uuid()) @db.Uuid
+  email     String?  @unique
+  name      String
+  role      Role     @default(STAFF)
+  // Hashed password for ADMIN and STAFF roles. Optional because DRIVERs log in with a PIN code only.
+  password  String?
+  // PIN code for DRIVER login. Stored hashed. Optional for ADMIN/STAFF logins.
+  pinCode   String?
+  createdAt DateTime @default(now())
+  lastLogin DateTime?
+
+  conversations Conversation[]
+  knowledge     KnowledgeEntry[]
+
+  @@map("users")
+}
+
+model Conversation {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  title     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages Message[]
+
+  @@index([userId])
+  @@map("conversations")
+}
+
+model Message {
+  id            String      @id @default(uuid()) @db.Uuid
+  conversationId String     @db.Uuid
+  role          MessageRole
+  content       String
+  createdAt     DateTime    @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId])
+  @@map("messages")
+}
+
+model KnowledgeEntry {
+  id            String   @id @default(uuid()) @db.Uuid
+  question      String
+  answer        String
+  sourceUserId  String?  @db.Uuid
+  tags          String[] @default([])
+  usedCount     Int      @default(0)
+  createdAt     DateTime @default(now())
+
+  sourceUser User? @relation(fields: [sourceUserId], references: [id], onDelete: SetNull)
+
+  @@index([sourceUserId])
+  @@map("knowledge_entries")
+}
+
+model DriveFile {
+  id             String    @id // Google Drive file ID (no default — assigned at sync time)
+  name           String
+  mimeType       String
+  parentFolder   String?
+  lastSyncedAt   DateTime  @default(now())
+
+  @@map("drive_files")
+}
