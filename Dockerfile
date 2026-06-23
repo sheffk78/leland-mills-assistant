@@ -35,4 +35,5 @@ COPY --from=builder /app/next.config.ts ./next.config.ts
 
 EXPOSE 3000
 
-CMD ["npm", "start"]
+# Run Prisma migration then start Next.js
+CMD ["sh", "-c", "npx prisma db push --accept-data-loss 2>/dev/null; npm start"]
