@@ -14,6 +14,7 @@ import { prisma } from "@/lib/db";
  */
 
 export const authConfig: NextAuthConfig = {
+  trustHost: true,
   providers: [
     Credentials({
       id: "credentials",
