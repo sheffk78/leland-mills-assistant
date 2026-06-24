@@ -36,5 +36,5 @@ COPY --from=builder /app/next.config.ts ./next.config.ts
 
 EXPOSE 3000
 
-# Run Prisma migration then start Next.js
-CMD ["sh", "-c", "npx prisma db push --accept-data-loss 2>/dev/null; npm start"]
+# Run Prisma migration then seed admin user, then start Next.js
+CMD ["sh", "-c", "npx prisma db push --accept-data-loss 2>&1; npx tsx scripts/seed-admin.ts 2>&1; npm start"]
