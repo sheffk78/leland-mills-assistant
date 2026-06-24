@@ -1,31 +1,15 @@
 [build]
-  builder = "nixpacks"
+  builder = "dockerfile"
 
 [deploy]
-  startCommand = "npm start"
-  healthcheckPath = "/"
+  startCommand = "sh -c 'npx prisma db push --accept-data-loss 2>&1; npm start'"
+  healthcheckPath = "/api/auth/csrf"
   healthcheckTimeout = 30
+  port = 8080
 
 [[services]]
   name = "leland-mills-assistant"
-  run = "npm start"
+  run = "sh -c 'npx prisma db push --accept-data-loss 2>&1; npm start'"
 
   [services.build]
-    builder = "nixpacks"
-
-  [services.ports]
-    port = 3000
-
-  [[services.volumes]]
-    mountPath = "/app/prisma"
-
-[[services]]
-  name = "postgres"
-  type = "postgres"
-  image = "postgres:16-alpine"
-
-  [services.build]
-    builder = "nixpacks"
-
-  [services.ports]
-    port = 5432
+    builder = "dockerfile"
