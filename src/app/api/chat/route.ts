@@ -84,9 +84,18 @@ export async function POST(request: Request) {
   // Send to Hermes agent and get response
   let assistantResponse: string;
   try {
+    // Fetch recent conversation history for context
+    const history = await prisma.message.findMany({
+      where: { conversationId: conversation.id },
+      orderBy: { createdAt: "asc" },
+      take: 10,
+      select: { role: true, content: true },
+    });
+
     const result = await sendChatMessage({
       message,
       conversationId: conversation.id,
+      history: history.map((m) => ({ role: m.role, content: m.content })),
     });
     assistantResponse = result.response;
   } catch (err) {

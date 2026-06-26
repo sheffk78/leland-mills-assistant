@@ -10,10 +10,12 @@
 
 const HERMES_BASE_URL =
   process.env.HERMES_API_URL ?? "http://localhost:3001";
+const HERMES_API_KEY = process.env.HERMES_API_KEY ?? "";
 
 export interface HermesChatRequest {
   message: string;
   conversationId?: string;
+  history?: Array<{ role: string; content: string }>;
 }
 
 export interface HermesChatResponse {
@@ -41,9 +43,16 @@ export interface HermesHealth {
 export async function sendChatMessage(
   request: HermesChatRequest,
 ): Promise<HermesChatResponse> {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
+  if (HERMES_API_KEY) {
+    headers["X-API-Key"] = HERMES_API_KEY;
+  }
+
   const res = await fetch(`${HERMES_BASE_URL}/api/chat`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers,
     body: JSON.stringify(request),
   });
 
@@ -81,8 +90,13 @@ export async function getConversation(
  * Check if the Hermes agent is running and healthy.
  */
 export async function checkHealth(): Promise<HermesHealth> {
+  const headers: Record<string, string> = {};
+  if (HERMES_API_KEY) {
+    headers["X-API-Key"] = HERMES_API_KEY;
+  }
+
   const res = await fetch(`${HERMES_BASE_URL}/api/health`, {
-    // Use a short timeout for health checks
+    headers,
     signal: AbortSignal.timeout(5000),
   });
 
