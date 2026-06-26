@@ -65,15 +65,12 @@ export function LoginForm() {
     <div className="w-full max-w-sm">
       {/* Logo / Branding */}
       <div className="flex flex-col items-center mb-8">
-        <div
-          className="w-16 h-16 rounded-2xl flex items-center justify-center mb-3"
-          style={{ backgroundColor: "var(--color-accent)" }}
-        >
-          <span className="text-white font-bold text-xl">LM</span>
-        </div>
-        <h1 className="text-2xl font-bold text-foreground">
-          Leland Mills
-        </h1>
+        <img
+          src="/leland-mills-logo.png"
+          alt="Leland Mills"
+          className="h-12 w-auto mb-3"
+          style={{ filter: mode === "credentials" ? "none" : "none" }}
+        />
         <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
           AI Assistant
         </p>
@@ -211,7 +208,7 @@ export function LoginForm() {
       </div>
 
       <p className="text-center text-xs text-zinc-400 dark:text-zinc-600 mt-4">
-        Leland Mills Feed Company · Heritage Since 1947
+        Leland Mills Feed Company · Fresh Feed Milled Daily Since 1898
       </p>
     </div>
   );

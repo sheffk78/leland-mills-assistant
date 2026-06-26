@@ -94,16 +94,12 @@ export function Sidebar({
         {/* Header */}
         <div className="p-4 border-b border-border">
           <div className="flex items-center gap-2 mb-3">
-            <div
-              className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
-              style={{ backgroundColor: "var(--color-accent)" }}
-            >
-              <span className="text-white font-bold text-sm">LM</span>
-            </div>
+            <img
+              src="/leland-mills-logo.png"
+              alt="Leland Mills"
+              className="h-7 w-auto"
+            />
             <div className="flex-1 min-w-0">
-              <h1 className="text-sm font-semibold text-foreground truncate">
-                Leland Mills
-              </h1>
               <p className="text-[10px] text-zinc-500 dark:text-zinc-400">
                 AI Assistant
               </p>
