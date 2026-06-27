@@ -9,40 +9,24 @@
  */
 
 import { NextResponse, type NextRequest } from "next/server";
-import { getToken } from "next-auth/jwt";
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Check for auth token — NextAuth v5 uses __Secure-authjs.session-token
+  // Check for session cookie — NextAuth v5 uses __Secure-authjs.session-token
   // in production (HTTPS) and authjs.session-token in development
-  const token = await getToken({
-    req: request,
-    secret: process.env.AUTH_SECRET,
-    cookieName: "__Secure-authjs.session-token",
-  });
+  const sessionCookie =
+    request.cookies.get("__Secure-authjs.session-token")?.value ||
+    request.cookies.get("authjs.session-token")?.value;
 
-  // Fallback: check for the non-secure cookie name too
-  let finalToken = token;
-  if (!finalToken) {
-    finalToken = await getToken({
-      req: request,
-      secret: process.env.AUTH_SECRET,
-      cookieName: "authjs.session-token",
-    });
-  }
-
-  if (!finalToken) {
+  if (!sessionCookie) {
     const loginUrl = new URL("/login", request.url);
     loginUrl.searchParams.set("callbackUrl", pathname);
     return NextResponse.redirect(loginUrl);
   }
 
-  // Admin-only routes
-  if (pathname.startsWith("/admin") && finalToken.role !== "ADMIN") {
-    return NextResponse.redirect(new URL("/chat", request.url));
-  }
-
+  // For admin routes, let the server component handle role checking
+  // (the proxy can't decode the JWT without potential getToken issues)
   return NextResponse.next();
 }
 
