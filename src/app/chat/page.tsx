@@ -88,12 +88,12 @@ export default function ChatPage() {
             </svg>
           </button>
           <div className="flex items-center gap-2">
-            <div
-              className="w-7 h-7 rounded-lg flex items-center justify-center"
-              style={{ backgroundColor: "var(--color-accent)" }}
-            >
-              <span className="text-white font-bold text-xs">LM</span>
-            </div>
+            <img
+              src="/leland-mills-logo.png"
+              alt="Leland Mills"
+              className="h-5 w-auto rounded"
+              style={{ backgroundColor: "#FFB800", padding: "2px 4px" }}
+            />
             <span className="text-sm font-semibold text-foreground">
               AI Assistant
             </span>

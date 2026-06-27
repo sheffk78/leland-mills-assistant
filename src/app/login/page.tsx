@@ -17,8 +17,8 @@ export default async function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-4 bg-background">
-      {/* Subtle background pattern */}
+    <div className="min-h-screen flex flex-col items-center justify-center px-4 py-8 bg-background">
+      {/* Subtle background pattern using Leland Mills brand dot grid */}
       <div
         className="absolute inset-0 opacity-[0.03] pointer-events-none"
         style={{

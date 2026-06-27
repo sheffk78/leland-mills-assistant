@@ -8,7 +8,8 @@
  * - Submit button with loading state
  * - Error message display
  * - Toggle between login modes
- * - Dark mode support
+ * - Educational onboarding for new users
+ * - Leland Mills brand styling matching lelandmills.com
  */
 
 import { useState, type FormEvent } from "react";
@@ -62,21 +63,30 @@ export function LoginForm() {
   };
 
   return (
-    <div className="w-full max-w-sm">
-      {/* Logo / Branding */}
-      <div className="flex flex-col items-center mb-8">
-        <div
-          className="rounded-2xl px-6 py-4 mb-3"
-          style={{ backgroundColor: "#1a1a1a" }}
-        >
+    <div className="w-full max-w-md">
+      {/* Brand header — gold background matching lelandmills.com */}
+      <div
+        className="rounded-2xl overflow-hidden mb-6 shadow-lg"
+        style={{ backgroundColor: "#FFB800" }}
+      >
+        <div className="flex items-center justify-center px-6 py-8">
           <img
-            src="/leland-mills-logo-white.png"
+            src="/leland-mills-logo.png"
             alt="Leland Mills"
-            className="h-10 w-auto"
+            className="h-14 w-auto"
           />
         </div>
-        <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
+      </div>
+
+      {/* Welcome text — educational for new users */}
+      <div className="text-center mb-6">
+        <h1 className="text-2xl font-bold text-foreground mb-1">
           AI Assistant
+        </h1>
+        <p className="text-sm text-zinc-500 dark:text-zinc-400">
+          Your smart operations companion for Leland Mills. Get instant answers
+          about truck inspections, feed inventory, DOT compliance, and safety
+          procedures.
         </p>
       </div>
 
@@ -112,6 +122,21 @@ export function LoginForm() {
           >
             Driver Login
           </button>
+        </div>
+
+        {/* Contextual help text for each mode */}
+        <div className="mb-4 px-1">
+          {mode === "credentials" ? (
+            <p className="text-xs text-zinc-500 dark:text-zinc-400">
+              For office staff, managers, and administrators. Use your Leland
+              Mills email and password.
+            </p>
+          ) : (
+            <p className="text-xs text-zinc-500 dark:text-zinc-400">
+              For delivery drivers. Enter the PIN code assigned to you by
+              dispatch. No email needed.
+            </p>
+          )}
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -211,9 +236,46 @@ export function LoginForm() {
         </form>
       </div>
 
-      <p className="text-center text-xs text-zinc-400 dark:text-zinc-600 mt-4">
-        Leland Mills Feed Company · Fresh Feed Milled Daily Since 1898
-      </p>
+      {/* Footer with heritage tagline */}
+      <div className="text-center mt-6">
+        <p className="text-xs text-zinc-400 dark:text-zinc-600">
+          Leland Mills Feed Company
+        </p>
+        <p className="text-xs text-zinc-400 dark:text-zinc-600 mt-0.5">
+          Fresh Feed Milled Daily Since 1898
+        </p>
+      </div>
+
+      {/* New user help section */}
+      <div className="mt-6 p-4 rounded-xl border border-border bg-surface">
+        <h3 className="text-xs font-semibold text-foreground mb-2">
+          First time here?
+        </h3>
+        <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-2">
+          This assistant helps you with day-to-day operations:
+        </p>
+        <ul className="text-xs text-zinc-500 dark:text-zinc-400 space-y-1">
+          <li className="flex items-start gap-2">
+            <span style={{ color: "var(--color-accent)" }}>•</span>
+            Truck pre-trip and post-trip inspection checklists
+          </li>
+          <li className="flex items-start gap-2">
+            <span style={{ color: "var(--color-accent)" }}>•</span>
+            Feed inventory levels and reorder points
+          </li>
+          <li className="flex items-start gap-2">
+            <span style={{ color: "var(--color-accent)" }}>•</span>
+            DOT hours of service rules and limits
+          </li>
+          <li className="flex items-start gap-2">
+            <span style={{ color: "var(--color-accent)" }}>•</span>
+            Safety procedures and lockout/tagout protocols
+          </li>
+        </ul>
+        <p className="text-xs text-zinc-400 dark:text-zinc-600 mt-3">
+          Contact your manager for login credentials.
+        </p>
+      </div>
     </div>
   );
 }

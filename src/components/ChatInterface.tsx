@@ -144,53 +144,102 @@ export function ChatInterface({
         className="flex-1 overflow-y-auto py-4"
       >
         {isEmpty ? (
-          <div className="flex flex-col items-center justify-center h-full text-center px-6">
+          <div className="flex flex-col items-center justify-center h-full text-center px-6 py-8">
+            {/* Logo mark */}
             <div
-              className="w-16 h-16 rounded-full flex items-center justify-center mb-4"
-              style={{
-                backgroundColor: "var(--color-accent-light)",
-              }}
+              className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4"
+              style={{ backgroundColor: "#FFB800" }}
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={1.5}
-                stroke="currentColor"
-                className="w-8 h-8"
-                style={{ color: "var(--color-accent)" }}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M8.625 12a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H8.25m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H12m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 0 1-2.555-.337A5.972 5.972 0 0 1 5.41 20.97a5.969 5.969 0 0 1-.474-.065 4.48 4.48 0 0 0 .978-2.025c.09-.457-.963-.66-1.433-.921C2.572 16.606 1.5 14.432 1.5 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25Z"
-                />
-              </svg>
+              <img
+                src="/leland-mills-logo.png"
+                alt="Leland Mills"
+                className="h-10 w-auto"
+              />
             </div>
+
             <h2 className="text-xl font-semibold text-foreground mb-1">
-              Ask me anything about Leland Mills operations
+              How can I help you today?
             </h2>
-            <p className="text-sm text-zinc-500 dark:text-zinc-400 max-w-md">
-              I can help with truck inspections, deliveries, feed inventory,
-              maintenance schedules, DOT hours of service, and safety
-              procedures.
+            <p className="text-sm text-zinc-500 dark:text-zinc-400 max-w-md mb-6">
+              I&apos;m your Leland Mills operations assistant. Ask me about
+              truck inspections, deliveries, feed inventory, safety procedures,
+              or anything else related to daily operations.
             </p>
-            <div className="mt-6 flex flex-wrap gap-2 justify-center">
-              {[
-                "Pre-trip inspection requirements",
-                "Feed inventory reorder points",
-                "Hours of service limits",
-                "Lockout/tagout procedure",
-              ].map((suggestion) => (
-                <button
-                  key={suggestion}
-                  onClick={() => setInput(suggestion)}
-                  className="text-xs px-3 py-1.5 rounded-full border border-border bg-surface hover:border-[var(--color-accent)] hover:text-[var(--color-accent)] transition-colors text-foreground"
-                >
-                  {suggestion}
-                </button>
-              ))}
+
+            {/* Educational starter prompts — organized by category */}
+            <div className="w-full max-w-lg space-y-3">
+              {/* Safety & Compliance */}
+              <div className="text-left">
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-600 mb-1.5 px-1">
+                  Safety & Compliance
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    "Pre-trip inspection checklist",
+                    "DOT hours of service limits",
+                    "Lockout/tagout procedure",
+                    "What makes a load secure?",
+                  ].map((suggestion) => (
+                    <button
+                      key={suggestion}
+                      onClick={() => setInput(suggestion)}
+                      className="text-xs px-3 py-1.5 rounded-full border border-border bg-surface hover:border-[var(--color-accent)] hover:text-[var(--color-accent)] transition-colors text-foreground"
+                    >
+                      {suggestion}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Inventory & Feed */}
+              <div className="text-left">
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-600 mb-1.5 px-1">
+                  Inventory & Feed
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    "Feed inventory reorder points",
+                    "How should feed be stored?",
+                    "What feed types do we carry?",
+                  ].map((suggestion) => (
+                    <button
+                      key={suggestion}
+                      onClick={() => setInput(suggestion)}
+                      className="text-xs px-3 py-1.5 rounded-full border border-border bg-surface hover:border-[var(--color-accent)] hover:text-[var(--color-accent)] transition-colors text-foreground"
+                    >
+                      {suggestion}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Getting Started */}
+              <div className="text-left">
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-600 mb-1.5 px-1">
+                  Getting Started
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    "What can you help me with?",
+                    "How do I log a delivery?",
+                  ].map((suggestion) => (
+                    <button
+                      key={suggestion}
+                      onClick={() => setInput(suggestion)}
+                      className="text-xs px-3 py-1.5 rounded-full border border-border bg-surface hover:border-[var(--color-accent)] hover:text-[var(--color-accent)] transition-colors text-foreground"
+                    >
+                      {suggestion}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
+
+            {/* Tip for new users */}
+            <p className="text-xs text-zinc-400 dark:text-zinc-600 mt-6 max-w-sm">
+              New here? Just type a question in plain English below. No special
+              commands needed.
+            </p>
           </div>
         ) : (
           <div className="max-w-3xl mx-auto">
