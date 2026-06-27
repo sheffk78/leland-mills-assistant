@@ -12,6 +12,10 @@ RUN npm ci
 
 COPY . .
 
+# Cache bust to ensure fresh build on every deploy
+ARG CACHE_BUST=1
+RUN echo "Cache bust: ${CACHE_BUST}"
+
 RUN npx prisma generate
 RUN npm run build
 
