@@ -219,8 +219,8 @@ export function LoginForm() {
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full rounded-lg py-2.5 text-sm font-medium text-white transition-colors hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
-            style={{ backgroundColor: "var(--color-accent)" }}
+            className="w-full rounded-lg py-2.5 text-sm font-bold transition-colors hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+            style={{ backgroundColor: "var(--color-accent)", color: "#000000" }}
           >
             {isLoading ? (
               <span className="flex items-center justify-center gap-2">

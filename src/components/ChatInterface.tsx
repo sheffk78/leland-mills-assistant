@@ -297,9 +297,10 @@ export function ChatInterface({
           <button
             type="submit"
             disabled={!input.trim() || isLoading}
-            className="shrink-0 rounded-xl px-4 py-2.5 text-sm font-medium text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="shrink-0 rounded-xl px-4 py-2.5 text-sm font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             style={{
               backgroundColor: "var(--color-accent)",
+              color: "#000000",
             }}
           >
             <svg

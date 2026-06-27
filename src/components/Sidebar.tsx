@@ -122,8 +122,8 @@ export function Sidebar({
 
           <button
             onClick={handleNewChat}
-            className="w-full flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-white transition-colors hover:opacity-90"
-            style={{ backgroundColor: "var(--color-accent)" }}
+            className="w-full flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-bold transition-colors hover:opacity-90"
+            style={{ backgroundColor: "var(--color-accent)", color: "#000000" }}
           >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
               <path d="M12 4.5v15m7.5-7.5h-15" strokeWidth={1.5} stroke="currentColor" />

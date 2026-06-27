@@ -1,37 +1,46 @@
 @import "tailwindcss";
 
-/* Leland Mills theme — heritage agricultural, rustic elegance.
-   Brand colors matched to lelandmills.com: Primary dark #1a1a1a,
-   Maroon accent #6B1F1F, Cream surface #f5f0e8, Gold #C4A441. */
+/* Leland Mills theme — matches lelandmills.com color scheme exactly.
+   Colors pulled from the live Shopify theme:
+   - Body bg: #f7f6f4 (warm cream)
+   - Body text: #222831 (dark blue-gray)
+   - Brand accent: #FFB800 (gold/yellow) — primary buttons, headers
+   - Brand hover: #E6A600
+   - Dark surfaces: #181c22, #222831
+   - Secondary accents: #7A3900 (brown), #E53D29 (red-orange) */
 @theme inline {
-  --color-background: #faf9f7;
-  --color-foreground: #1a1a1a;
-  --color-accent: #6B1F1F;
-  --color-accent-hover: #5a1818;
-  --color-accent-light: #f5eaea;
-  --color-gold: #C4A441;
-  --color-gold-hover: #b08f38;
-  --color-mill-green: #3D6B3E;
-  --color-mill-green-hover: #345a35;
-  --color-surface: #f5f0e8;
+  --color-background: #f7f6f4;
+  --color-foreground: #222831;
+  --color-accent: #FFB800;
+  --color-accent-hover: #E6A600;
+  --color-accent-light: rgba(255, 184, 0, 0.12);
+  --color-gold: #FFB800;
+  --color-gold-hover: #E6A600;
+  --color-brown: #7A3900;
+  --color-red-accent: #E53D29;
+  --color-surface: #ffffff;
   --color-border: #e5ddd0;
+  --color-dark-surface: #181c22;
+  --color-dark-text: #222831;
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --color-background: #0a0a0a;
-    --color-foreground: #ededed;
-    --color-accent: #C4A441;
-    --color-accent-hover: #d4b451;
-    --color-accent-light: #1a1710;
+    --color-background: #181c22;
+    --color-foreground: #f7f6f4;
+    --color-accent: #FFB800;
+    --color-accent-hover: #E6A600;
+    --color-accent-light: rgba(255, 184, 0, 0.15);
     --color-gold: #FFB800;
-    --color-gold-hover: #ffc933;
-    --color-mill-green: #4a8a4c;
-    --color-mill-green-hover: #5da460;
-    --color-surface: #141414;
-    --color-border: #262626;
+    --color-gold-hover: #E6A600;
+    --color-brown: #9A5910;
+    --color-red-accent: #E53D29;
+    --color-surface: #222831;
+    --color-border: #2d333b;
+    --color-dark-surface: #181c22;
+    --color-dark-text: #f7f6f4;
   }
 }
 
