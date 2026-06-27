@@ -65,12 +65,16 @@ export function LoginForm() {
     <div className="w-full max-w-sm">
       {/* Logo / Branding */}
       <div className="flex flex-col items-center mb-8">
-        <img
-          src="/leland-mills-logo.png"
-          alt="Leland Mills"
-          className="h-12 w-auto mb-3"
-          style={{ filter: mode === "credentials" ? "none" : "none" }}
-        />
+        <div
+          className="rounded-2xl px-6 py-4 mb-3"
+          style={{ backgroundColor: "#1a1a1a" }}
+        >
+          <img
+            src="/leland-mills-logo-white.png"
+            alt="Leland Mills"
+            className="h-10 w-auto"
+          />
+        </div>
         <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
           AI Assistant
         </p>

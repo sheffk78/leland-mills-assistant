@@ -97,7 +97,12 @@ export function Sidebar({
             <img
               src="/leland-mills-logo.png"
               alt="Leland Mills"
-              className="h-7 w-auto"
+              className="h-6 w-auto dark:hidden"
+            />
+            <img
+              src="/leland-mills-logo-white.png"
+              alt="Leland Mills"
+              className="h-6 w-auto hidden dark:block"
             />
             <div className="flex-1 min-w-0">
               <p className="text-[10px] text-zinc-500 dark:text-zinc-400">
