@@ -151,9 +151,9 @@ export function ChatInterface({
               style={{ backgroundColor: "#FFB800" }}
             >
               <img
-                src="/leland-mills-logo.png"
+                src="/leland-mills-icon-mark.png"
                 alt="Leland Mills"
-                className="h-10 w-auto"
+                className="h-12 w-12 object-contain"
               />
             </div>
 

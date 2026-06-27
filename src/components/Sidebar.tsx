@@ -98,13 +98,18 @@ export function Sidebar({
             className="flex items-center gap-2 mb-3 px-3 py-2.5 rounded-lg"
             style={{ backgroundColor: "#FFB800" }}
           >
-            <img
-              src="/leland-mills-logo.png"
-              alt="Leland Mills"
-              className="h-6 w-auto"
-            />
+            <div className="w-7 h-7 rounded flex items-center justify-center shrink-0 bg-black/10">
+              <img
+                src="/leland-mills-icon-mark.png"
+                alt="Leland Mills"
+                className="h-5 w-5 object-contain"
+              />
+            </div>
+            <span className="text-sm font-bold text-black">
+              LELAND MILLS
+            </span>
             <div className="flex-1 min-w-0">
-              <p className="text-[10px] text-black/70 font-medium">
+              <p className="text-[10px] text-black/60 font-medium">
                 AI Assistant
               </p>
             </div>

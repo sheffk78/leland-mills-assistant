@@ -73,7 +73,7 @@ export function LoginForm() {
           <img
             src="/leland-mills-logo.png"
             alt="Leland Mills"
-            className="h-14 w-auto"
+            className="max-h-14 w-full max-w-[280px] object-contain"
           />
         </div>
       </div>
