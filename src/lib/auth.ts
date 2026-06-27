@@ -2,6 +2,7 @@ import NextAuth, { type NextAuthConfig } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/db";
+import type { Role } from "@/generated/prisma/enums";
 
 /**
  * NextAuth v5 configuration for the Leland Mills AI Assistant.
@@ -103,7 +104,7 @@ export const authConfig: NextAuthConfig = {
     async session({ session, token }) {
       if (session.user) {
         session.user.id = token.id as string;
-        session.user.role = token.role;
+        session.user.role = token.role as Role;
       }
       return session;
     },
