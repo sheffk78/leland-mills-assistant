@@ -62,21 +62,29 @@ export async function PUT(request: Request) {
     return NextResponse.json({ error: "Monthly limit should be >= daily limit" }, { status: 400 });
   }
 
-  // Upsert the limits row
-  const updated = await prisma.usageLimit.upsert({
-    where: { role: role as Role },
-    create: {
-      role: role as Role,
-      hourlyLimit: h,
-      dailyLimit: d,
-      monthlyLimit: m,
-    },
-    update: {
-      hourlyLimit: h,
-      dailyLimit: d,
-      monthlyLimit: m,
-    },
-  });
+  // Upsert the limits row — find first, then update or create
+  const existing = await prisma.usageLimit.findUnique({ where: { role: role as Role } });
+  let updated;
+
+  if (existing) {
+    updated = await prisma.usageLimit.update({
+      where: { role: role as Role },
+      data: {
+        hourlyLimit: h,
+        dailyLimit: d,
+        monthlyLimit: m,
+      },
+    });
+  } else {
+    updated = await prisma.usageLimit.create({
+      data: {
+        role: role as Role,
+        hourlyLimit: h,
+        dailyLimit: d,
+        monthlyLimit: m,
+      },
+    });
+  }
 
   return NextResponse.json({
     message: `Limits updated for ${role}`,
