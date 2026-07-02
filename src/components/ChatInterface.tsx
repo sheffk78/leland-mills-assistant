@@ -128,11 +128,14 @@ export function ChatInterface({
         const msg =
           err instanceof Error ? err.message : "Something went wrong";
         setError(msg);
-        // Remove the user message on error so they can retry
-        setMessages((prev) =>
-          prev.filter((m) => m !== userMsg),
-        );
-        setInput(text); // Restore input
+        // On rate limit (429), keep the user's message visible but show the error.
+        // On other errors, remove the message so they can retry.
+        if (!msg.includes("limit") && !msg.includes("too quickly")) {
+          setMessages((prev) =>
+            prev.filter((m) => m !== userMsg),
+          );
+          setInput(text); // Restore input
+        }
       } finally {
         setIsLoading(false);
       }

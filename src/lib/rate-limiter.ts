@@ -101,13 +101,13 @@ export async function checkRateLimit(
 
   const [hourly, daily, monthly] = await Promise.all([
     prisma.usageLog.count({
-      where: { userId, createdAt: { gte: oneHourAgo } },
+      where: { userId, source: "hermes_agent", createdAt: { gte: oneHourAgo } },
     }),
     prisma.usageLog.count({
-      where: { userId, createdAt: { gte: oneDayAgo } },
+      where: { userId, source: "hermes_agent", createdAt: { gte: oneDayAgo } },
     }),
     prisma.usageLog.count({
-      where: { userId, createdAt: { gte: oneMonthAgo } },
+      where: { userId, source: "hermes_agent", createdAt: { gte: oneMonthAgo } },
     }),
   ]);
 
@@ -117,7 +117,7 @@ export async function checkRateLimit(
   if (monthly >= limits.monthly) {
     return {
       allowed: false,
-      reason: `You've reached your monthly message limit (${limits.monthly} messages). Your limit resets in ${daysUntilReset()} days. Contact an administrator if you need more.`,
+      reason: `You've reached your monthly message limit (${limits.monthly} messages). This is a rolling 30-day window, so older messages will stop counting as they age out. Contact an administrator if you need more.`,
       usage,
       limits,
     };
@@ -127,7 +127,7 @@ export async function checkRateLimit(
   if (daily >= limits.daily) {
     return {
       allowed: false,
-      reason: `You've reached your daily message limit (${limits.daily} messages). Your limit resets at midnight. Contact an administrator if you need more.`,
+      reason: `You've reached your daily message limit (${limits.daily} messages). This is a rolling 24-hour window, so older messages will stop counting as they age out. Contact an administrator if you need more.`,
       usage,
       limits,
     };
@@ -260,11 +260,3 @@ export async function getUsageStats() {
   };
 }
 
-/**
- * Calculate days until the monthly limit resets (30-day rolling window).
- */
-function daysUntilReset(): number {
-  const now = new Date();
-  const reset = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
-  return Math.ceil((reset.getTime() - now.getTime()) / (24 * 60 * 60 * 1000));
-}

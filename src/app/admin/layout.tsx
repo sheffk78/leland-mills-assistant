@@ -55,6 +55,12 @@ export default async function AdminLayout({
               Users
             </Link>
             <Link
+              href="/admin/usage"
+              className="px-3 py-1.5 rounded-lg text-sm text-zinc-600 dark:text-zinc-400 hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+            >
+              Usage &amp; Limits
+            </Link>
+            <Link
               href="/admin/settings"
               className="px-3 py-1.5 rounded-lg text-sm text-zinc-600 dark:text-zinc-400 hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
             >
