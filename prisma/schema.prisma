@@ -95,8 +95,7 @@ model DriveFile {
 
 // Rate limiting config — one row per role. Admin can adjust via dashboard.
 model UsageLimit {
-  id              Int      @id @default(autoincrement())
-  role            Role     @unique
+  role            Role     @id // role is the primary key (DRIVER, STAFF, ADMIN)
   hourlyLimit     Int      @default(30)  // max messages per hour
   dailyLimit      Int      @default(100) // max messages per day
   monthlyLimit    Int      @default(2000) // max messages per month
