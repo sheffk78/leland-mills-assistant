@@ -42,14 +42,24 @@ export async function getLimitsForRole(role: Role) {
   });
 
   if (!limits) {
-    limits = await prisma.usageLimit.create({
-      data: {
-        role,
-        hourlyLimit: DEFAULT_LIMITS[role].hourly,
-        dailyLimit: DEFAULT_LIMITS[role].daily,
-        monthlyLimit: DEFAULT_LIMITS[role].monthly,
-      },
-    });
+    try {
+      limits = await prisma.usageLimit.create({
+        data: {
+          role,
+          hourlyLimit: DEFAULT_LIMITS[role].hourly,
+          dailyLimit: DEFAULT_LIMITS[role].daily,
+          monthlyLimit: DEFAULT_LIMITS[role].monthly,
+        },
+      });
+    } catch {
+      // Race condition — another request created it. Fetch instead.
+      limits = await prisma.usageLimit.findUnique({ where: { role } });
+    }
+  }
+
+  if (!limits) {
+    // Shouldn't happen, but return defaults as fallback
+    return DEFAULT_LIMITS[role];
   }
 
   return {
