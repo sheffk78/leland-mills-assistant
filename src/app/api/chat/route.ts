@@ -20,6 +20,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { sendChatMessage } from "@/lib/hermes-client";
 import { searchKnowledge, captureKnowledge } from "@/lib/knowledge";
+import { checkRateLimit, logUsage } from "@/lib/rate-limiter";
 
 /**
  * Build a role-based system prompt for the Hermes agent.
@@ -59,6 +60,22 @@ export async function POST(request: Request) {
     return NextResponse.json(
       { error: "Missing or invalid 'message' field" },
       { status: 400 },
+    );
+  }
+
+  // RATE LIMIT CHECK — verify user is within their limits before processing
+  const userRole = (session.user.role ?? "STAFF") as "ADMIN" | "STAFF" | "DRIVER";
+  const rateCheck = await checkRateLimit(session.user.id, userRole);
+
+  if (!rateCheck.allowed) {
+    return NextResponse.json(
+      {
+        error: "Rate limit exceeded",
+        message: rateCheck.reason,
+        usage: rateCheck.usage,
+        limits: rateCheck.limits,
+      },
+      { status: 429 },
     );
   }
 
@@ -115,6 +132,9 @@ export async function POST(request: Request) {
     });
 
     // Auto-capture is skipped since we served from knowledge base (already captured)
+
+    // Log usage (knowledge base hits are tracked for stats but don't count against rate limits)
+    logUsage(session.user.id, userRole, conversation.id, "knowledge_base").catch(() => {});
 
     return NextResponse.json({
       response: knowledgeResponse,
@@ -192,6 +212,9 @@ export async function POST(request: Request) {
   captureKnowledge(message, assistantResponse, session.user.id).catch(() => {
     // Silent failure — knowledge capture is best-effort
   });
+
+  // Log usage (this counts against rate limits — it was an LLM call)
+  logUsage(session.user.id, userRole, conversation.id, "hermes_agent").catch(() => {});
 
   return NextResponse.json({
     response: assistantResponse,

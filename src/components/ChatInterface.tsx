@@ -95,8 +95,14 @@ export function ChatInterface({
         });
 
         if (!res.ok) {
-          const errText = await res.text().catch(() => "Request failed");
-          throw new Error(errText);
+          let errMsg = "Request failed";
+          try {
+            const errData = await res.json();
+            errMsg = errData.message || errData.error || "Request failed";
+          } catch {
+            errMsg = await res.text().catch(() => "Request failed");
+          }
+          throw new Error(errMsg);
         }
 
         const data: ApiResponse = await res.json();
