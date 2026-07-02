@@ -5,19 +5,13 @@
  * Used to let the assistant look up delivery notes, inspection reports, feed
  * formulas, maintenance records, etc.
  *
- * TODO: Jake needs to set up OAuth credentials in Google Cloud Console.
- *   1. Create a project at https://console.cloud.google.com/
- *   2. Enable the Google Drive API
- *   3. Create OAuth 2.0 credentials (type: Web application)
- *   4. Set authorized redirect URIs
- *   5. Add GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET to .env
- *
- * For now, these functions use a service-account-style approach with a
- * pre-configured JWT client. The actual OAuth flow for per-user access
- * still needs to be implemented (see TODO in getAuthClient).
+ * Authentication uses OAuth2 with stored refresh tokens.
+ * The admin connects Drive via /api/admin/drive/connect (OAuth flow).
+ * The refresh token is stored in the database and used to get fresh access tokens.
  */
 
 import { google, type drive_v3 } from "googleapis";
+import { prisma } from "@/lib/db";
 
 export interface DriveSearchResult {
   id: string;
@@ -36,14 +30,35 @@ export interface DriveFileContent {
 }
 
 /**
+ * Get the stored refresh token from the database.
+ * Returns null if Drive hasn't been connected yet.
+ */
+async function getStoredRefreshToken(): Promise<string | null> {
+  const settings = await prisma.driveFile.findUnique({
+    where: { id: "settings:drive" },
+  });
+
+  if (!settings?.parentFolder) {
+    return null;
+  }
+
+  try {
+    const data = JSON.parse(settings.parentFolder);
+    return data.refreshToken ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Get an authenticated Google Drive client.
  *
- * TODO: Implement the full OAuth2 flow for per-user authentication.
- * Currently uses a service account approach which requires a service account
- * JSON key file. For production, this should use OAuth2 with stored tokens
- * per user (stored in the database or a session).
+ * Uses the stored OAuth2 refresh token to get a fresh access token.
+ * Falls back to service account credentials if set (alternative auth method).
+ *
+ * @throws if Drive credentials are not configured at all
  */
-function getDriveClient(): drive_v3.Drive {
+async function getDriveClient(): Promise<drive_v3.Drive> {
   const clientId = process.env.GOOGLE_CLIENT_ID;
   const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
 
@@ -53,18 +68,41 @@ function getDriveClient(): drive_v3.Drive {
     );
   }
 
-  // TODO: Replace with proper OAuth2 flow with stored refresh tokens.
-  // For now, this creates a JWT client that expects a service account key.
-  // In production, Jake will either:
-  //   a) Use a service account with domain-wide delegation, or
-  //   b) Implement per-user OAuth2 with token storage
-  const auth = new google.auth.JWT({
-    email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-    key: process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY,
-    scopes: ["https://www.googleapis.com/auth/drive.readonly"],
-  });
+  const appUrl = process.env.AUTH_URL ?? "http://localhost:3000";
 
-  return google.drive({ version: "v3", auth });
+  // Try OAuth2 with stored refresh token first
+  const refreshToken = await getStoredRefreshToken();
+
+  if (refreshToken) {
+    const oauth2Client = new google.auth.OAuth2(
+      clientId,
+      clientSecret,
+      `${appUrl}/api/admin/drive/connect`,
+    );
+
+    oauth2Client.setCredentials({ refresh_token: refreshToken });
+
+    // The Google APIs library auto-refreshes the access token when it expires
+    return google.drive({ version: "v3", auth: oauth2Client });
+  }
+
+  // Fallback: service account approach (if configured)
+  const serviceAccountEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
+  const serviceAccountKey = process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY;
+
+  if (serviceAccountEmail && serviceAccountKey) {
+    const auth = new google.auth.JWT({
+      email: serviceAccountEmail,
+      key: serviceAccountKey,
+      scopes: ["https://www.googleapis.com/auth/drive.readonly"],
+    });
+
+    return google.drive({ version: "v3", auth });
+  }
+
+  throw new Error(
+    "Google Drive is not connected. An admin needs to authorize Drive access via the settings page.",
+  );
 }
 
 /**
@@ -77,7 +115,7 @@ export async function searchDriveFiles(
   query: string,
   maxResults = 10,
 ): Promise<DriveSearchResult[]> {
-  const drive = getDriveClient();
+  const drive = await getDriveClient();
   const rootFolderId = process.env.DRIVE_ROOT_FOLDER_ID ?? "root";
 
   // Build a Drive query: search in the root folder and subfolders
@@ -109,7 +147,7 @@ export async function searchDriveFiles(
 export async function readDriveFile(
   fileId: string,
 ): Promise<DriveFileContent> {
-  const drive = getDriveClient();
+  const drive = await getDriveClient();
 
   // Get file metadata
   const meta = await drive.files.get({
@@ -162,7 +200,7 @@ export async function listDriveFiles(
   folderId?: string,
   maxResults = 50,
 ): Promise<DriveSearchResult[]> {
-  const drive = getDriveClient();
+  const drive = await getDriveClient();
   const parent = folderId ?? process.env.DRIVE_ROOT_FOLDER_ID ?? "root";
 
   const res = await drive.files.list({
@@ -179,4 +217,12 @@ export async function listDriveFiles(
     modifiedTime: file.modifiedTime!,
     webViewLink: file.webViewLink ?? undefined,
   }));
+}
+
+/**
+ * Check if Google Drive has been connected (refresh token exists in DB).
+ */
+export async function isDriveConnected(): Promise<boolean> {
+  const token = await getStoredRefreshToken();
+  return token !== null;
 }

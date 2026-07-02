@@ -93,30 +93,22 @@ export function Sidebar({
       >
         {/* Header section */}
         <div className="p-3 border-b border-border">
-          {/* Gold brand band matching lelandmills.com */}
-          <div
-            className="flex items-center gap-2 mb-3 px-3 py-2.5 rounded-lg"
-            style={{ backgroundColor: "#FFB800" }}
-          >
-            <div className="w-7 h-7 rounded flex items-center justify-center shrink-0 bg-black/10">
-              <img
-                src="/leland-mills-icon-mark.png"
-                alt="Leland Mills"
-                className="h-5 w-5 object-contain"
-              />
-            </div>
-            <span className="text-sm font-bold text-black">
-              LELAND MILLS
-            </span>
+          {/* Logo on natural background, matching lelandmills.com */}
+          <div className="flex items-center gap-2.5 mb-3 px-2 py-2">
+            <img
+              src="/leland-mills-full-logo-black-white.png"
+              alt="Leland Mills"
+              className="h-8 w-auto object-contain"
+            />
             <div className="flex-1 min-w-0">
-              <p className="text-[10px] text-black/60 font-medium">
+              <p className="text-[10px] text-zinc-500 font-medium">
                 AI Assistant
               </p>
             </div>
             {/* Close button (mobile) */}
             <button
               onClick={onClose}
-              className="md:hidden p-1 text-black/70 hover:text-black"
+              className="md:hidden p-1 text-foreground hover:opacity-60"
               aria-label="Close sidebar"
             >
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">

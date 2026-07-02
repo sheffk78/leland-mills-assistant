@@ -64,18 +64,22 @@ export function LoginForm() {
 
   return (
     <div className="w-full max-w-md">
-      {/* Brand header — gold background matching lelandmills.com */}
-      <div
-        className="rounded-2xl overflow-hidden mb-6 shadow-lg"
-        style={{ backgroundColor: "#FFB800" }}
-      >
-        <div className="flex items-center justify-center px-6 py-8">
-          <img
-            src="/leland-mills-logo.png"
-            alt="Leland Mills"
-            className="max-h-14 w-full max-w-[280px] object-contain"
-          />
-        </div>
+      {/* Brand header — full logo on cream background, matching lelandmills.com */}
+      <div className="flex items-center justify-center mb-4">
+        <img
+          src="/leland-mills-full-logo-black-white.png"
+          alt="Leland Mills"
+          className="h-16 w-auto object-contain"
+        />
+      </div>
+
+      {/* Hero image — real feed bags from lelandmills.com */}
+      <div className="rounded-2xl overflow-hidden mb-6 shadow-sm border border-border">
+        <img
+          src="/lm-feed-bags-garden.png"
+          alt="Leland Mills feed products"
+          className="w-full h-40 object-cover"
+        />
       </div>
 
       {/* Welcome text — educational for new users */}

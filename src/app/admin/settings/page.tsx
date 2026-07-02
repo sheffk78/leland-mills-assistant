@@ -1,15 +1,17 @@
 /**
  * Admin: Settings page.
  *
- * - Drive connection status
- * - API key configuration display
- * - Basic system info
+ * - Drive connection status + connect button
+ * - AI agent health status
+ * - Database status
+ * - Configuration details
  *
  * This is a server component that reads environment variables and
  * the Hermes agent health status.
  */
 
 import { checkHealth, getHermesBaseUrl } from "@/lib/hermes-client";
+import { isDriveConnected } from "@/lib/drive-client";
 
 export default async function AdminSettingsPage() {
   // Check Hermes agent health
@@ -33,6 +35,16 @@ export default async function AdminSettingsPage() {
     !!driveClientId &&
     !!driveClientSecret &&
     driveClientId !== "your-client-id.apps.googleusercontent.com";
+
+  // Check if Drive has been connected via OAuth (refresh token stored)
+  let driveConnected = false;
+  if (isDriveConfigured) {
+    try {
+      driveConnected = await isDriveConnected();
+    } catch {
+      // If the DB query fails, just show not connected
+    }
+  }
 
   // Other config
   const hermesUrl = getHermesBaseUrl();
@@ -83,12 +95,7 @@ export default async function AdminSettingsPage() {
           )}
           {agentStatus === "online" && (
             <p className="text-xs text-green-600 dark:text-green-400 mt-2">
-              Mock agent or Hermes instance is responding.
-            </p>
-          )}
-          {agentStatus === "offline" && (
-            <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-2">
-              Start the mock agent: <code className="font-mono">node mock-agent/server.js</code>
+              Hermes agent is responding and ready.
             </p>
           )}
         </div>
@@ -101,26 +108,47 @@ export default async function AdminSettingsPage() {
             </h3>
             <span
               className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium ${
-                isDriveConfigured
+                driveConnected
                   ? "bg-green-100 text-green-700 dark:bg-green-950/40 dark:text-green-300"
-                  : "bg-yellow-100 text-yellow-700 dark:bg-yellow-950/40 dark:text-yellow-300"
+                  : isDriveConfigured
+                    ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-950/40 dark:text-yellow-300"
+                    : "bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-300"
               }`}
             >
               <span
                 className={`w-1.5 h-1.5 rounded-full ${
-                  isDriveConfigured ? "bg-green-500" : "bg-yellow-500"
+                  driveConnected ? "bg-green-500" : isDriveConfigured ? "bg-yellow-500" : "bg-red-500"
                 }`}
               />
-              {isDriveConfigured ? "Configured" : "Not Set Up"}
+              {driveConnected ? "Connected" : isDriveConfigured ? "Needs Authorization" : "Not Set Up"}
             </span>
           </div>
           <p className="text-xs text-zinc-500 dark:text-zinc-400">
             Root folder: <code className="font-mono text-foreground">{driveRootFolder}</code>
           </p>
+          {!driveConnected && isDriveConfigured && (
+            <div className="mt-3">
+              <button
+                onClick={() => {
+                  // Call the API to get the OAuth URL, then redirect
+                  fetch("/api/admin/drive/connect", { method: "POST" })
+                    .then((r) => r.json())
+                    .then((data) => {
+                      if (data.authUrl) window.location.href = data.authUrl;
+                    })
+                    .catch(() => alert("Failed to start Drive authorization"));
+                }}
+                className="text-xs px-3 py-1.5 rounded-lg font-medium text-white transition-colors hover:opacity-90"
+                style={{ backgroundColor: "var(--color-accent)", color: "#000000" }}
+              >
+                Connect Google Drive
+              </button>
+            </div>
+          )}
           {!isDriveConfigured && (
             <div className="mt-2">
               <p className="text-xs text-yellow-600 dark:text-yellow-400 mb-1">
-                TODO: Jake needs to set up Google Cloud credentials.
+                Google Cloud credentials needed first.
               </p>
               <ol className="text-xs text-zinc-500 dark:text-zinc-400 list-decimal pl-4 space-y-0.5">
                 <li>Create project at Google Cloud Console</li>
@@ -217,13 +245,6 @@ export default async function AdminSettingsPage() {
           </div>
         </dl>
       </div>
-
-      {/* TODO: Jake needs to provide the following for production:
-          1. A real AUTH_SECRET (generate with: openssl rand -base64 32)
-          2. Google Cloud OAuth credentials
-          3. A production DATABASE_URL
-          4. The real Hermes agent URL (when deployed)
-      */}
     </div>
   );
 }

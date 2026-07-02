@@ -145,17 +145,12 @@ export function ChatInterface({
       >
         {isEmpty ? (
           <div className="flex flex-col items-center justify-center h-full text-center px-6 py-8">
-            {/* Logo mark */}
-            <div
-              className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4"
-              style={{ backgroundColor: "#FFB800" }}
-            >
-              <img
-                src="/leland-mills-icon-mark.png"
-                alt="Leland Mills"
-                className="h-12 w-12 object-contain"
-              />
-            </div>
+            {/* Logo — full text logo on natural background */}
+            <img
+              src="/leland-mills-full-logo-black-white.png"
+              alt="Leland Mills"
+              className="h-14 w-auto object-contain mb-4"
+            />
 
             <h2 className="text-xl font-semibold text-foreground mb-1">
               How can I help you today?

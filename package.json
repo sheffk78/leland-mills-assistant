@@ -6,7 +6,14 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "test:e2e": "npx playwright test",
+    "test:e2e:local": "BASE_URL=http://localhost:3000 npx playwright test",
+    "test:e2e:prod": "BASE_URL=https://leland-mills-assistant-production-1bdd.up.railway.app npx playwright test",
+    "test:all": "vitest run && npx playwright test"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.8.0",
@@ -24,14 +31,22 @@
     "uuid": "^14.0.1"
   },
   "devDependencies": {
+    "@playwright/test": "^1.61.1",
     "@tailwindcss/postcss": "^4",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@vitest/coverage-v8": "^4.1.9",
     "eslint": "^9",
     "eslint-config-next": "16.2.9",
+    "jsdom": "^29.1.1",
+    "playwright": "^1.61.1",
     "tailwindcss": "^4",
     "tsx": "^4.22.4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^4.1.9"
   }
 }
