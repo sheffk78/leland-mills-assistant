@@ -88,9 +88,9 @@ export default function ChatPage() {
             </svg>
           </button>
           <div className="flex items-center gap-2">
-            <div className="rounded-lg flex items-center justify-center shrink-0 px-2 py-1">
+            <div className="rounded-lg flex items-center justify-center shrink-0 px-2 py-1" style={{ backgroundColor: "#FFB800" }}>
               <img
-                src="/leland-mills-full-logo-black-white.png"
+                src="/leland-mills-logo-white-on-transparent.png"
                 alt="Leland Mills"
                 className="h-7 w-auto object-contain"
               />

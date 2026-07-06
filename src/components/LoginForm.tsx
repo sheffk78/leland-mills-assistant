@@ -64,12 +64,12 @@ export function LoginForm() {
 
   return (
     <div className="w-full max-w-md">
-      {/* Brand header — full logo on cream background, matching lelandmills.com */}
-      <div className="flex items-center justify-center mb-4">
+      {/* Brand header — white logo on gold background, matching lelandmills.com */}
+      <div className="flex items-center justify-center mb-4 rounded-xl" style={{ backgroundColor: "#FFB800" }}>
         <img
-          src="/leland-mills-full-logo-black-white.png"
+          src="/leland-mills-logo-white-on-transparent.png"
           alt="Leland Mills"
-          className="h-16 w-auto object-contain"
+          className="h-16 w-auto object-contain py-2"
         />
       </div>
 
