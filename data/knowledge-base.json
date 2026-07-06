@@ -1,0 +1,862 @@
+{
+  "company": {
+    "name": "Leland Mills",
+    "founded": 1898,
+    "tagline": "Fresh Feed Milled Daily, Since 1898",
+    "description": "Four-generation family company providing freshly made feed products at affordable prices since 1898. Supporting families in their pursuit of an agriculture-based lifestyle, one bag of fresh feed at a time.",
+    "storeAddress": "905 S Mill Rd, Spanish Fork, UT 84660",
+    "storeHours": {
+      "tuesdayToFriday": "8:00 AM - 5:00 PM",
+      "saturday": "8:00 AM - 2:00 PM",
+      "sundayAndMonday": "Closed"
+    },
+    "phone": null,
+    "website": "https://lelandmills.com",
+    "reviewCount": 1679
+  },
+  "products": [
+    {
+      "category": "Poultry Feed",
+      "subcategory": "Layer Hens",
+      "name": "20% Backyard Layer Blend (Winter/Summer Blend)",
+      "price": "$21.99",
+      "bagSize": "50lb",
+      "animalType": "Chicken/Layer",
+      "feedType": "Blend",
+      "url": "https://lelandmills.com/products/winter-blend",
+      "tags": [
+        "Best Seller"
+      ],
+      "rating": 4.87,
+      "reviewCount": 165
+    },
+    {
+      "category": "Poultry Feed",
+      "subcategory": "Layer Hens",
+      "name": "18% Protein Layer Mash",
+      "price": "$16.99",
+      "bagSize": "50lb",
+      "animalType": "Chicken/Layer",
+      "feedType": "Mash",
+      "url": "https://lelandmills.com/products/18-protein-layer-mash",
+      "tags": [
+        "Best Seller"
+      ],
+      "rating": 4.88,
+      "reviewCount": 185
+    },
+    {
+      "category": "Poultry Feed",
+      "subcategory": "Chickens",
+      "name": "Gallo Pro",
+      "price": "$26.49",
+      "bagSize": "50lb",
+      "animalType": "Chicken",
+      "feedType": "Blend",
+      "url": "https://lelandmills.com/products/gallo-pro",
+      "tags": [
+        "Best Seller"
+      ],
+      "rating": 4.89,
+      "reviewCount": 264
+    },
+    {
+      "category": "Poultry Feed",
+      "subcategory": "Layer Hens",
+      "name": "HIP-PEA HENS Corn and Soy Free Layer Blend",
+      "price": "$29.99",
+      "bagSize": "50lb",
+      "animalType": "Chicken/Layer",
+      "feedType": "Blend",
+      "url": "https://lelandmills.com/products/non-gmo-layer-blend",
+      "tags": [
+        "Non-GMO"
+      ],
+      "rating": 4.92,
+      "reviewCount": 48
+    },
+    {
+      "category": "Poultry Feed",
+      "subcategory": "Chickens",
+      "name": "Chicken Scratch",
+      "price": "$14.50",
+      "bagSize": "50lb",
+      "animalType": "Chicken",
+      "feedType": "Scratch",
+      "url": "https://lelandmills.com/products/chicken-scratch",
+      "tags": [
+        "Best Seller"
+      ],
+      "rating": 4.92,
+      "reviewCount": 51
+    },
+    {
+      "category": "Poultry Feed",
+      "subcategory": "Layer Hens",
+      "name": "IFA Organic 16% Soy Free Layer Pellet Chicken Feed",
+      "price": "$29.99",
+      "bagSize": "40lb",
+      "animalType": "Chicken/Layer",
+      "feedType": "Pellet",
+      "url": "https://lelandmills.com/products/ifa-organic-soy-free-layer-pellet",
+      "tags": [
+        "New",
+        "USDA Organic",
+        "Non-GMO",
+        "Soy Free"
+      ],
+      "rating": 5.0,
+      "reviewCount": 1
+    },
+    {
+      "category": "Poultry Feed",
+      "subcategory": "Layer Hens",
+      "name": "IFA 20% Layer Pellet Chicken Feed",
+      "price": "$19.99",
+      "bagSize": "50lb",
+      "animalType": "Chicken/Layer",
+      "feedType": "Pellet",
+      "url": "https://lelandmills.com/products/ifa-20-layer-pellet",
+      "tags": [
+        "New",
+        "Sold Out"
+      ],
+      "rating": null,
+      "reviewCount": 0
+    },
+    {
+      "category": "Poultry Feed",
+      "subcategory": "Roosters",
+      "name": "Rooster Mix",
+      "price": "$19.99",
+      "bagSize": "50lb",
+      "animalType": "Chicken/Rooster",
+      "feedType": "Mix",
+      "url": "https://lelandmills.com/products/rooster-mix",
+      "rating": 4.83,
+      "reviewCount": 24
+    },
+    {
+      "category": "Poultry Feed",
+      "subcategory": "Chicks & Pullets",
+      "name": "24% Protein Poultry Grower",
+      "price": "$17.50",
+      "bagSize": "50lb",
+      "animalType": "Chicken/Growing",
+      "feedType": "Mash",
+      "url": "https://lelandmills.com/products/24-protein-layer-mash",
+      "tags": [
+        "Best Seller"
+      ],
+      "rating": 4.88,
+      "reviewCount": 48
+    },
+    {
+      "category": "Poultry Feed",
+      "subcategory": "Chicks & Pullets",
+      "name": "26% Protein Chick Starter",
+      "price": "$18.50",
+      "bagSize": "50lb",
+      "animalType": "Chicken/Chick",
+      "feedType": "Starter",
+      "url": "https://lelandmills.com/products/26-protein-game-starter-grower",
+      "rating": 4.77,
+      "reviewCount": 39
+    },
+    {
+      "category": "Poultry Feed",
+      "subcategory": "Game Birds",
+      "name": "30% Protein Poultry Starter/Grower",
+      "price": "$19.50",
+      "bagSize": "50lb",
+      "animalType": "Poultry/Game Bird",
+      "feedType": "Starter/Grower",
+      "url": "https://lelandmills.com/products/30-protein-game-starter-grower",
+      "rating": 5.0,
+      "reviewCount": 14
+    },
+    {
+      "category": "Poultry Feed",
+      "subcategory": "Chickens",
+      "name": "Peppy-Grit: Essential Grit for Healthy Chickens",
+      "price": "$13.99",
+      "bagSize": "25lb",
+      "animalType": "Chicken",
+      "feedType": "Grit",
+      "url": "https://lelandmills.com/products/peppy-grit",
+      "tags": [
+        "New"
+      ],
+      "rating": 5.0,
+      "reviewCount": 4
+    },
+    {
+      "category": "Poultry Feed",
+      "subcategory": "Chickens",
+      "name": "Peppy-Shell Slow Release Calcium",
+      "price": "$13.99",
+      "bagSize": "25lb",
+      "animalType": "Chicken",
+      "feedType": "Calcium Supplement",
+      "url": "https://lelandmills.com/products/peppy-hen-calcite-grit",
+      "tags": [
+        "New"
+      ],
+      "rating": 5.0,
+      "reviewCount": 9
+    },
+    {
+      "category": "Poultry Feed",
+      "subcategory": "Chickens",
+      "name": "Cracked Corn",
+      "price": "$13.50",
+      "bagSize": "50lb",
+      "animalType": "Poultry/General",
+      "feedType": "Whole Grain",
+      "url": "https://lelandmills.com/products/cracked-corn",
+      "rating": 5.0,
+      "reviewCount": 4
+    },
+    {
+      "category": "Poultry Feed",
+      "subcategory": "Chickens",
+      "name": "Chopped Corn",
+      "price": "$13.50",
+      "bagSize": "50lb",
+      "animalType": "Poultry/General",
+      "feedType": "Whole Grain",
+      "url": "https://lelandmills.com/products/chopped-corn",
+      "rating": 3.67,
+      "reviewCount": 3
+    },
+    {
+      "category": "Poultry Feed",
+      "subcategory": "Chickens",
+      "name": "Whole Corn",
+      "price": "$13.50",
+      "bagSize": "50lb",
+      "animalType": "Poultry/General",
+      "feedType": "Whole Grain",
+      "url": "https://lelandmills.com/products/whole-corn",
+      "rating": 5.0,
+      "reviewCount": 7
+    },
+    {
+      "category": "Poultry Feed",
+      "subcategory": "Chickens",
+      "name": "Whole Soft White Wheat",
+      "price": "$14.50",
+      "bagSize": "50lb",
+      "animalType": "Poultry/General",
+      "feedType": "Whole Grain",
+      "url": "https://lelandmills.com/products/whole-soft-white-wheat",
+      "rating": 5.0,
+      "reviewCount": 5
+    },
+    {
+      "category": "Livestock Feed",
+      "subcategory": "Sheep & Lamb",
+      "name": "Buckle Up Show Lamb Grower",
+      "price": "$22.00",
+      "bagSize": "50lb",
+      "animalType": "Sheep/Lamb",
+      "feedType": "Grower",
+      "url": "https://lelandmills.com/products/buckle-up-lamb-grower",
+      "tags": [
+        "Best Seller"
+      ],
+      "rating": 4.74,
+      "reviewCount": 19
+    },
+    {
+      "category": "Livestock Feed",
+      "subcategory": "Horse",
+      "name": "Horse Conditioner",
+      "price": "$19.00",
+      "bagSize": "50lb",
+      "animalType": "Horse",
+      "feedType": "Conditioner",
+      "url": "https://lelandmills.com/products/horse-conditioner",
+      "rating": 5.0,
+      "reviewCount": 14
+    },
+    {
+      "category": "Livestock Feed",
+      "subcategory": "General",
+      "name": "C.O.B. (Corn, Oats, and Barley)",
+      "price": "$14.50",
+      "bagSize": "50lb",
+      "animalType": "Livestock/General",
+      "feedType": "Grain Mix",
+      "url": "https://lelandmills.com/products/c-o-b-corn-oats-and-barley",
+      "tags": [
+        "Best Seller"
+      ],
+      "rating": 4.62,
+      "reviewCount": 13
+    },
+    {
+      "category": "Livestock Feed",
+      "subcategory": "Cattle",
+      "name": "Lactation Formula (Dairy Feed)",
+      "price": "$16.50",
+      "bagSize": "50lb",
+      "animalType": "Cattle/Dairy",
+      "feedType": "Dairy Feed",
+      "url": "https://lelandmills.com/products/dairy-feed",
+      "rating": 4.83,
+      "reviewCount": 12
+    },
+    {
+      "category": "Livestock Feed",
+      "subcategory": "General",
+      "name": "Rolled Corn & Rolled Barley",
+      "price": "$13.50",
+      "bagSize": "50lb",
+      "animalType": "Livestock/General",
+      "feedType": "Rolled Grain",
+      "url": "https://lelandmills.com/products/rolled-corn-and-rolled-barley",
+      "tags": [
+        "Best Seller"
+      ],
+      "rating": 5.0,
+      "reviewCount": 19
+    },
+    {
+      "category": "Livestock Feed",
+      "subcategory": "General",
+      "name": "Alfalfa Pellets",
+      "price": "$19.00",
+      "bagSize": "50lb",
+      "animalType": "Livestock/General",
+      "feedType": "Pellet",
+      "url": "https://lelandmills.com/products/alfalfa-pellets",
+      "rating": 5.0,
+      "reviewCount": 6
+    },
+    {
+      "category": "Livestock Feed",
+      "subcategory": "Cattle",
+      "name": "Beef Grower & Finisher",
+      "price": "$16.50",
+      "bagSize": "50lb",
+      "animalType": "Cattle/Beef",
+      "feedType": "Grower/Finisher",
+      "url": "https://lelandmills.com/products/beef-grower-and-finisher",
+      "tags": [
+        "Best Seller"
+      ],
+      "rating": 5.0,
+      "reviewCount": 35
+    },
+    {
+      "category": "Livestock Feed",
+      "subcategory": "General",
+      "name": "Trace Mineral Salt",
+      "price": "$8.00",
+      "bagSize": "Block",
+      "animalType": "Livestock/General",
+      "feedType": "Mineral Supplement",
+      "url": "https://lelandmills.com/products/trace-mineral-salt-block",
+      "rating": 5.0,
+      "reviewCount": 2
+    },
+    {
+      "category": "Livestock Feed",
+      "subcategory": "Pigs",
+      "name": "18% Protein Pig Grower and Finisher Mash",
+      "price": "$16.99",
+      "bagSize": "50lb",
+      "animalType": "Pig",
+      "feedType": "Mash",
+      "url": "https://lelandmills.com/products/18-protein-hog-mash",
+      "rating": 4.87,
+      "reviewCount": 31
+    },
+    {
+      "category": "Livestock Feed",
+      "subcategory": "General",
+      "name": "Rolled Corn",
+      "price": "$13.50",
+      "bagSize": "50lb",
+      "animalType": "Livestock/General",
+      "feedType": "Rolled Grain",
+      "url": "https://lelandmills.com/products/rolled-corn",
+      "rating": 5.0,
+      "reviewCount": 6
+    },
+    {
+      "category": "Livestock Feed",
+      "subcategory": "General",
+      "name": "Whole Oats",
+      "price": "$17.50",
+      "bagSize": "50lb",
+      "animalType": "Livestock/General",
+      "feedType": "Whole Grain",
+      "url": "https://lelandmills.com/products/whole-oats",
+      "rating": 5.0,
+      "reviewCount": 8
+    },
+    {
+      "category": "Livestock Feed",
+      "subcategory": "Pigs",
+      "name": "14% Protein Pig Mash",
+      "price": "$15.50",
+      "bagSize": "50lb",
+      "animalType": "Pig",
+      "feedType": "Mash",
+      "url": "https://lelandmills.com/products/14-protein-hog-mash",
+      "rating": 4.33,
+      "reviewCount": 3
+    },
+    {
+      "category": "Livestock Feed",
+      "subcategory": "Pigs",
+      "name": "20% Protein Pig Starter",
+      "price": "$18.50",
+      "bagSize": "50lb",
+      "animalType": "Pig",
+      "feedType": "Starter",
+      "url": "https://lelandmills.com/products/20-pig-starter",
+      "rating": 5.0,
+      "reviewCount": 1
+    },
+    {
+      "category": "Livestock Feed",
+      "subcategory": "Cattle",
+      "name": "Keylix 20% All-Natural Protein 200 LB Tub for Cattle",
+      "price": "Sold Out",
+      "bagSize": "200lb Tub",
+      "animalType": "Cattle",
+      "feedType": "Protein Supplement",
+      "url": "https://lelandmills.com/products/keylix-protein-and-mineral-tubs",
+      "tags": [
+        "Sold Out"
+      ],
+      "rating": 4.67,
+      "reviewCount": 3
+    },
+    {
+      "category": "Livestock Feed",
+      "subcategory": "General",
+      "name": "Rolled Barley",
+      "price": "$13.00",
+      "bagSize": "50lb",
+      "animalType": "Livestock/General",
+      "feedType": "Rolled Grain",
+      "url": "https://lelandmills.com/products/rolled-barley",
+      "rating": 5.0,
+      "reviewCount": 2
+    },
+    {
+      "category": "Livestock Feed",
+      "subcategory": "Cattle",
+      "name": "Calf Starter Mix",
+      "price": "$19.00",
+      "bagSize": "50lb",
+      "animalType": "Cattle/Calf",
+      "feedType": "Starter",
+      "url": "https://lelandmills.com/products/calf-starter-mix",
+      "rating": 5.0,
+      "reviewCount": 5
+    },
+    {
+      "category": "Livestock Feed",
+      "subcategory": "Horse",
+      "name": "Keylix Equine Gold Tub for Horses",
+      "price": "Sold Out",
+      "bagSize": "Tub",
+      "animalType": "Horse",
+      "feedType": "Supplement",
+      "url": "https://lelandmills.com/products/keylix-equine-gold-tub-for-horses",
+      "tags": [
+        "Sold Out"
+      ],
+      "rating": 5.0,
+      "reviewCount": 2
+    },
+    {
+      "category": "Livestock Feed",
+      "subcategory": "General",
+      "name": "MAN UP By Sunglo",
+      "price": "$138.29",
+      "bagSize": "Various",
+      "animalType": "Livestock/Show",
+      "feedType": "Supplement",
+      "url": "https://lelandmills.com/products/man-up-by-sunglo"
+    },
+    {
+      "category": "Livestock Feed",
+      "subcategory": "General",
+      "name": "MILK IT! by Sunglo",
+      "price": "$66.00",
+      "bagSize": "Various",
+      "animalType": "Livestock/Show",
+      "feedType": "Supplement",
+      "url": "https://lelandmills.com/products/milk-it-by-sunglo"
+    },
+    {
+      "category": "Show Feed",
+      "subcategory": "Show Lambs",
+      "name": "Show Lamb Creep",
+      "price": "$23.00",
+      "bagSize": "50lb",
+      "animalType": "Sheep/Show Lamb",
+      "feedType": "Creep",
+      "url": "https://lelandmills.com/products/lamb-creep",
+      "rating": 5.0,
+      "reviewCount": 3
+    },
+    {
+      "category": "Show Feed",
+      "subcategory": "Show Calves",
+      "name": "Show Calf Grower",
+      "price": "$20.50",
+      "bagSize": "50lb",
+      "animalType": "Cattle/Show Calf",
+      "feedType": "Grower",
+      "url": "https://lelandmills.com/products/show-calf-grower-1",
+      "rating": 5.0,
+      "reviewCount": 5
+    },
+    {
+      "category": "Show Feed",
+      "subcategory": "Show Calves",
+      "name": "Show Calf Finisher",
+      "price": "$20.00",
+      "bagSize": "50lb",
+      "animalType": "Cattle/Show Calf",
+      "feedType": "Finisher",
+      "url": "https://lelandmills.com/products/show-calf-finisher",
+      "rating": 5.0,
+      "reviewCount": 6
+    },
+    {
+      "category": "Show Feed",
+      "subcategory": "Show Calves",
+      "name": "Show Calf Creep",
+      "price": "$22.00",
+      "bagSize": "50lb",
+      "animalType": "Cattle/Show Calf",
+      "feedType": "Creep",
+      "url": "https://lelandmills.com/products/show-calf-creep",
+      "rating": 5.0,
+      "reviewCount": 4
+    },
+    {
+      "category": "Show Feed",
+      "subcategory": "Show Pigs",
+      "name": "Show Pig Grower 18 (18G)",
+      "price": "$22.00",
+      "bagSize": "50lb",
+      "animalType": "Pig/Show Pig",
+      "feedType": "Grower",
+      "url": "https://lelandmills.com/products/18-g-show-pig-grower-with-sunglo",
+      "rating": 5.0,
+      "reviewCount": 6
+    },
+    {
+      "category": "Show Feed",
+      "subcategory": "Show Pigs",
+      "name": "Show Pig Finisher 16 (16G)",
+      "price": "$21.50",
+      "bagSize": "50lb",
+      "animalType": "Pig/Show Pig",
+      "feedType": "Finisher",
+      "url": "https://lelandmills.com/products/16-g-show-pig-finisher-with-sunglo",
+      "rating": 5.0,
+      "reviewCount": 2
+    },
+    {
+      "category": "Show Feed",
+      "subcategory": "Show Lambs",
+      "name": "Buck and Ewe Show Lamb Mix",
+      "price": "$18.50",
+      "bagSize": "50lb",
+      "animalType": "Sheep/Show Lamb",
+      "feedType": "Mix",
+      "url": "https://lelandmills.com/products/buck-and-ewe-mix",
+      "rating": 5.0,
+      "reviewCount": 2
+    },
+    {
+      "category": "Show Feed",
+      "subcategory": "General",
+      "name": "Beet Pulp Shreds 30 LB Bag",
+      "price": "Sold Out",
+      "bagSize": "30lb",
+      "animalType": "Livestock/General",
+      "feedType": "Supplement",
+      "url": "https://lelandmills.com/products/beet-pulp-shreds-30-lb",
+      "tags": [
+        "Sold Out"
+      ]
+    },
+    {
+      "category": "Pet Food",
+      "subcategory": "Dog",
+      "name": "Dog Food - The Pride Pro Series",
+      "price": "$46.00",
+      "bagSize": "Various",
+      "animalType": "Dog",
+      "feedType": "Dry Dog Food",
+      "url": "https://lelandmills.com/products/dog-food-the-pride-pro-series",
+      "rating": 4.78,
+      "reviewCount": 9
+    },
+    {
+      "category": "Pet Food",
+      "subcategory": "Dog",
+      "name": "Dog Food - True Active",
+      "price": "Sold Out",
+      "bagSize": "Various",
+      "animalType": "Dog",
+      "feedType": "Dry Dog Food",
+      "url": "https://lelandmills.com/products/dog-food",
+      "tags": [
+        "Sold Out"
+      ],
+      "rating": 4.62,
+      "reviewCount": 8
+    },
+    {
+      "category": "Pet Food",
+      "subcategory": "Dog",
+      "name": "Dog Food - Hunter's Pride",
+      "price": "Sold Out",
+      "bagSize": "Various",
+      "animalType": "Dog",
+      "feedType": "Dry Dog Food",
+      "url": "https://lelandmills.com/products/dog-food-hunters-pride",
+      "tags": [
+        "Sold Out"
+      ],
+      "rating": 5.0,
+      "reviewCount": 10
+    },
+    {
+      "category": "Pet Food",
+      "subcategory": "Dog",
+      "name": "Dog Food - True Puppy",
+      "price": "$46.95",
+      "bagSize": "Various",
+      "animalType": "Dog/Puppy",
+      "feedType": "Dry Dog Food",
+      "url": "https://lelandmills.com/products/dog-food-loyal-puppy"
+    },
+    {
+      "category": "Pet Food",
+      "subcategory": "Cat",
+      "name": "Cat Food",
+      "price": "$23.95",
+      "bagSize": "Various",
+      "animalType": "Cat",
+      "feedType": "Dry Cat Food",
+      "url": "https://lelandmills.com/products/cat-food",
+      "rating": 5.0,
+      "reviewCount": 5
+    },
+    {
+      "category": "Pet Food",
+      "subcategory": "Wild Birds",
+      "name": "Wild Bird Seed",
+      "price": "$25.00",
+      "bagSize": "Various",
+      "animalType": "Wild Birds",
+      "feedType": "Seed",
+      "url": "https://lelandmills.com/products/wild-bird-seed",
+      "rating": 5.0,
+      "reviewCount": 2
+    },
+    {
+      "category": "Pet Food",
+      "subcategory": "Wild Birds",
+      "name": "Safflower 50 LB Bag",
+      "price": "$37.50",
+      "bagSize": "50lb",
+      "animalType": "Wild Birds",
+      "feedType": "Seed",
+      "url": "https://lelandmills.com/products/safflower-50-lb",
+      "rating": 5.0,
+      "reviewCount": 1
+    },
+    {
+      "category": "IFA Feeds",
+      "subcategory": "Layer Hens",
+      "name": "IFA Organic 16% Soy Free Layer Pellet Chicken Feed",
+      "price": "$29.99",
+      "bagSize": "40lb",
+      "animalType": "Chicken/Layer",
+      "feedType": "Pellet",
+      "url": "https://lelandmills.com/products/ifa-organic-soy-free-layer-pellet",
+      "tags": [
+        "USDA Organic",
+        "Non-GMO",
+        "Soy Free"
+      ]
+    },
+    {
+      "category": "IFA Feeds",
+      "subcategory": "Layer Hens",
+      "name": "IFA 20% Layer Pellet Chicken Feed",
+      "price": "$19.99",
+      "bagSize": "50lb",
+      "animalType": "Chicken/Layer",
+      "feedType": "Pellet",
+      "url": "https://lelandmills.com/products/ifa-20-layer-pellet"
+    },
+    {
+      "category": "IFA Feeds",
+      "subcategory": "Rabbit",
+      "name": "IFA Rabbit Pellet Feed",
+      "price": "$19.99",
+      "bagSize": "50lb",
+      "animalType": "Rabbit",
+      "feedType": "Pellet",
+      "url": "https://lelandmills.com/products/ifa-rabbit-pellet",
+      "tags": [
+        "16% Protein",
+        "Digestive + Immune Support"
+      ]
+    }
+  ],
+  "services": [
+    {
+      "name": "Feed Store at Your Door (Delivery)",
+      "description": "Fresh feed delivered right to your doorstep. Whether you need a few 50lb bags delivered locally, a full ton tote dropped by forklift, or feed shipped across the country.",
+      "details": [
+        "Local delivery available",
+        "Bulk delivery (1000+ lbs)",
+        "Ground and LTL shipping",
+        "Nationwide shipping available"
+      ]
+    },
+    {
+      "name": "Feed Subscription (Auto Feed)",
+      "description": "Fresh feed at your door automatically. Save 5% on every delivery with a subscription.",
+      "details": [
+        "Save 5% on every delivery",
+        "Automatic scheduled deliveries",
+        "Cancel anytime"
+      ]
+    },
+    {
+      "name": "Bulk Shipping",
+      "description": "Quality feed delivered right to your door. Available on orders 1000 lbs or more.",
+      "details": [
+        "Minimum order: 1000 lbs",
+        "Available for bulk feed collection items",
+        "LTL and freight shipping"
+      ]
+    },
+    {
+      "name": "In-Store Pickup",
+      "description": "Place your order online and pick it up in-store.",
+      "details": [
+        "Online ordering",
+        "Pickup at 905 S Mill Rd, Spanish Fork, UT",
+        "Store hours: Tue-Fri 8am-5pm, Sat 8am-2pm, Closed Sun & Mon"
+      ]
+    },
+    {
+      "name": "Referral Program",
+      "description": "When you refer a new customer, you get free local delivery and your friend will too on their first order.",
+      "details": [
+        "Free local delivery for referrer",
+        "Free local delivery for referee on first order",
+        "Sign up on website"
+      ]
+    },
+    {
+      "name": "3-Step Layer Method (Hatch to Hen)",
+      "description": "Nurture your chicks into happy healthy layers with Leland Mills' exclusive 3-step layer method. Tailored feed ensures your chicks grow into thriving layers.",
+      "details": [
+        "Step 1: Chick Starter (26% or 30% protein)",
+        "Step 2: Poultry Grower (24% protein)",
+        "Step 3: Layer Mash or Layer Blend (18-20% protein)"
+      ]
+    }
+  ],
+  "locationInfo": {
+    "states": [
+      "Utah",
+      "Idaho",
+      "Wyoming",
+      "Nationwide"
+    ],
+    "regions": {
+      "Utah": [
+        "Cache Valley",
+        "Davis County",
+        "Salt Lake County",
+        "Tooele County",
+        "Uintah Basin",
+        "Utah County",
+        "Wasatch County"
+      ],
+      "Idaho": [
+        "Eastern Idaho",
+        "Southern Idaho"
+      ],
+      "Wyoming": [
+        "Western Wyoming"
+      ],
+      "Nationwide": [
+        "Nationwide Shipping"
+      ]
+    }
+  },
+  "productCategories": {
+    "Poultry Feed": {
+      "subcategories": [
+        "Chickens",
+        "Layer Hens",
+        "Roosters",
+        "Broiler Chickens",
+        "Game Birds",
+        "Chicks & Pullets"
+      ],
+      "url": "https://lelandmills.com/collections/poultry-feed"
+    },
+    "Livestock Feed": {
+      "subcategories": [
+        "Cattle",
+        "Horse",
+        "Sheep & Lamb",
+        "Goats",
+        "Pigs"
+      ],
+      "url": "https://lelandmills.com/collections/livestock-feeds"
+    },
+    "Show Feed": {
+      "subcategories": [
+        "Show Calves",
+        "Show Lambs",
+        "Show Goats",
+        "Show Pigs"
+      ],
+      "url": "https://lelandmills.com/collections/show-feed"
+    },
+    "Bulk Feed": {
+      "subcategories": [
+        "Various - 1000+ lb orders"
+      ],
+      "url": "https://lelandmills.com/collections/bulk-feeds"
+    },
+    "Pet Food": {
+      "subcategories": [
+        "Dog",
+        "Cat",
+        "Wild Birds"
+      ],
+      "url": "https://lelandmills.com/collections/pet-food"
+    },
+    "IFA Feeds": {
+      "subcategories": [
+        "Organic Layer Pellets",
+        "Rabbit Feed"
+      ],
+      "url": "https://lelandmills.com/collections/ifa-feeds"
+    }
+  }
+}
