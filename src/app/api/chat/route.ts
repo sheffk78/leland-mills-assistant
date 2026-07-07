@@ -19,7 +19,6 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { sendChatMessage } from "@/lib/hermes-client";
-import { searchKnowledge, captureKnowledge } from "@/lib/knowledge";
 import { checkRateLimit, logUsage } from "@/lib/rate-limiter";
 
 /**
@@ -116,38 +115,16 @@ export async function POST(request: Request) {
     },
   });
 
-  // STEP 1: Check the knowledge base for an instant answer
-  const knowledgeMatch = await searchKnowledge(message);
+  // NOTE: Knowledge base interception DISABLED (2026-07-07).
+  // The auto-capture + global search was causing cross-conversation pollution:
+  // answers from one conversation thread were being served in response to
+  // questions in a completely different thread, because the ILIKE search
+  // with a 40% word-overlap threshold was too loose. This caused Jake to get
+  // stuck in loops where stale answers from previous conversations kept
+  // recurring. Re-enable only with per-conversation scoping or a much higher
+  // similarity threshold (70%+).
 
-  if (knowledgeMatch) {
-    const knowledgeResponse = knowledgeMatch.answer;
-
-    // Store the assistant response (tagged as from knowledge base)
-    const assistantMessage = await prisma.message.create({
-      data: {
-        conversationId: conversation.id,
-        role: "ASSISTANT",
-        content: knowledgeResponse,
-      },
-    });
-
-    // Auto-capture is skipped since we served from knowledge base (already captured)
-
-    // Log usage (knowledge base hits are tracked for stats but don't count against rate limits)
-    logUsage(session.user.id, userRole, conversation.id, "knowledge_base").catch(() => {});
-
-    return NextResponse.json({
-      response: knowledgeResponse,
-      conversationId: conversation.id,
-      userMessageId: userMessage.id,
-      assistantMessageId: assistantMessage.id,
-      source: "knowledge_base",
-      knowledgeEntryId: knowledgeMatch.id,
-      createdAt: new Date().toISOString(),
-    });
-  }
-
-  // STEP 2: No knowledge base match — send to Hermes agent
+  // STEP 1: Send all messages to Hermes agent
   let assistantResponse: string;
   try {
     // Fetch recent conversation history for context
@@ -208,11 +185,12 @@ export async function POST(request: Request) {
     },
   });
 
-  // STEP 3: Auto-capture this Q&A pair into the knowledge base
-  // This is fire-and-forget — don't block the response on it
-  captureKnowledge(message, assistantResponse, session.user.id).catch(() => {
-    // Silent failure — knowledge capture is best-effort
-  });
+  // STEP 2: Auto-capture DISABLED (2026-07-07).
+  // Knowledge base auto-capture was polluting the global search table with
+  // every Q&A pair from every conversation, which then got served back as
+  // "instant answers" in unrelated conversations. Disabled alongside the
+  // knowledge base search above. Re-enable together with proper scoping.
+  // captureKnowledge(message, assistantResponse, session.user.id).catch(() => {});
 
   // Log usage (this counts against rate limits — it was an LLM call)
   logUsage(session.user.id, userRole, conversation.id, "hermes_agent").catch(() => {});
