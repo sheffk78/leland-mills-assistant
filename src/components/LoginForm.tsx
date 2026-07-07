@@ -73,11 +73,11 @@ export function LoginForm() {
         />
       </div>
 
-      {/* Hero image — real feed bags from lelandmills.com */}
+      {/* Hero image — Leland Mills facility, from lelandmills.com */}
       <div className="rounded-2xl overflow-hidden mb-6 shadow-sm border border-border">
         <img
-          src="/lm-feed-bags-garden.png"
-          alt="Leland Mills feed products"
+          src="/leland-mill-road-view.jpg"
+          alt="Leland Milling Company facility"
           className="w-full h-40 object-cover"
         />
       </div>
