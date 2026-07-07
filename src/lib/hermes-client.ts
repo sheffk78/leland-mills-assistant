@@ -16,6 +16,7 @@ export interface HermesChatRequest {
   message: string;
   conversationId?: string;
   history?: Array<{ role: string; content: string }>;
+  role?: string; // "ADMIN" | "STAFF" | "DRIVER" — routes to the correct Hermes profile
 }
 
 export interface HermesChatResponse {

@@ -172,6 +172,7 @@ export async function POST(request: Request) {
       message: contextualizedMessage,
       conversationId: conversation.id,
       history: history.map((m) => ({ role: m.role, content: m.content })),
+      role: userRole,
     });
     assistantResponse = result.response;
   } catch (err) {
