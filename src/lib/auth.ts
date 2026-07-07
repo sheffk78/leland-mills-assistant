@@ -54,14 +54,21 @@ export const authConfig: NextAuthConfig = {
           return null;
         }
 
-        // Flow 2: Email + password login (for admin/staff)
+        // Flow 2: Email/username + password login (for admin/staff)
         if (credentials?.email && credentials?.password) {
-          const email = String(credentials.email);
+          const loginInput = String(credentials.email).trim();
           const password = String(credentials.password);
 
-          const user = await prisma.user.findUnique({
-            where: { email },
+          // Try looking up by email first, then by username
+          let user = await prisma.user.findUnique({
+            where: { email: loginInput },
           });
+
+          if (!user) {
+            user = await prisma.user.findUnique({
+              where: { username: loginInput },
+            });
+          }
 
           if (!user || !user.password) {
             return null;

@@ -38,6 +38,7 @@ export async function PUT(
   let body: {
     name?: string;
     email?: string;
+    username?: string;
     password?: string;
     pinCode?: string;
     role?: Role;
@@ -84,10 +85,30 @@ export async function PUT(
     updateData.email = body.email;
   }
 
-  // If switching to DRIVER, clear email/password
+  // For non-DRIVER roles, update username
+  if (body.role !== "DRIVER" && body.username !== undefined) {
+    if (body.username) {
+      // Check for duplicate username (excluding current user)
+      const dup = await prisma.user.findFirst({
+        where: { username: body.username, NOT: { id } },
+      });
+      if (dup) {
+        return NextResponse.json(
+          { error: "A user with this username already exists" },
+          { status: 409 },
+        );
+      }
+      updateData.username = body.username;
+    } else {
+      updateData.username = null;
+    }
+  }
+
+  // If switching to DRIVER, clear email/password/username
   if (body.role === "DRIVER") {
     updateData.email = null;
     updateData.password = null;
+    updateData.username = null;
   }
 
   // Hash and update password if provided
@@ -111,6 +132,7 @@ export async function PUT(
     select: {
       id: true,
       email: true,
+      username: true,
       name: true,
       role: true,
       createdAt: true,

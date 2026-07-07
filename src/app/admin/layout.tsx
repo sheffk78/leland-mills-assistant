@@ -4,11 +4,15 @@
  * Provides a consistent header with navigation for all admin pages.
  * The actual access control is handled by the proxy (src/proxy.ts) which
  * requires ADMIN role for /admin routes.
+ *
+ * Responsive: nav links are inline on desktop, collapse into a
+ * hamburger dropdown menu on mobile.
  */
 
 import Link from "next/link";
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
+import { AdminNav } from "@/components/AdminNav";
 
 export default async function AdminLayout({
   children,
@@ -28,16 +32,16 @@ export default async function AdminLayout({
   return (
     <div className="min-h-screen bg-background">
       {/* Admin header */}
-      <header className="border-b border-border bg-surface">
+      <header className="border-b border-border bg-surface sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div
-              className="w-9 h-9 rounded-lg flex items-center justify-center"
+              className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
               style={{ backgroundColor: "var(--color-accent)" }}
             >
               <span className="text-white font-bold text-sm">LM</span>
             </div>
-            <div>
+            <div className="min-w-0">
               <h1 className="text-sm font-semibold text-foreground">
                 Admin Panel
               </h1>
@@ -47,32 +51,7 @@ export default async function AdminLayout({
             </div>
           </div>
 
-          <nav className="flex items-center gap-1">
-            <Link
-              href="/admin/users"
-              className="px-3 py-1.5 rounded-lg text-sm text-zinc-600 dark:text-zinc-400 hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
-            >
-              Users
-            </Link>
-            <Link
-              href="/admin/usage"
-              className="px-3 py-1.5 rounded-lg text-sm text-zinc-600 dark:text-zinc-400 hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
-            >
-              Usage &amp; Limits
-            </Link>
-            <Link
-              href="/admin/settings"
-              className="px-3 py-1.5 rounded-lg text-sm text-zinc-600 dark:text-zinc-400 hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
-            >
-              Settings
-            </Link>
-            <Link
-              href="/chat"
-              className="px-3 py-1.5 rounded-lg text-sm text-zinc-600 dark:text-zinc-400 hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
-            >
-              Chat
-            </Link>
-          </nav>
+          <AdminNav />
         </div>
       </header>
 

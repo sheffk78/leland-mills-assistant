@@ -33,6 +33,7 @@ export async function GET() {
     select: {
       id: true,
       email: true,
+      username: true,
       name: true,
       role: true,
       createdAt: true,
@@ -52,6 +53,7 @@ export async function POST(request: Request) {
   let body: {
     name?: string;
     email?: string;
+    username?: string;
     password?: string;
     pinCode?: string;
     role?: Role;
@@ -63,7 +65,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const { name, email, password, pinCode, role } = body;
+  const { name, email, username, password, pinCode, role } = body;
 
   if (!name || typeof name !== "string") {
     return NextResponse.json({ error: "Name is required" }, { status: 400 });
@@ -75,9 +77,16 @@ export async function POST(request: Request) {
 
   // Validate required fields per role
   if (role !== "DRIVER") {
-    if (!email || !password) {
+    // For ADMIN/STAFF, require at least an email OR a username, and a password
+    if (!email && !username) {
       return NextResponse.json(
-        { error: "Email and password are required for ADMIN/STAFF roles" },
+        { error: "Email or username is required for ADMIN/STAFF roles" },
+        { status: 400 },
+      );
+    }
+    if (!password) {
+      return NextResponse.json(
+        { error: "Password is required for ADMIN/STAFF roles" },
         { status: 400 },
       );
     }
@@ -101,6 +110,17 @@ export async function POST(request: Request) {
     }
   }
 
+  // Check for duplicate username
+  if (username) {
+    const existing = await prisma.user.findUnique({ where: { username } });
+    if (existing) {
+      return NextResponse.json(
+        { error: "A user with this username already exists" },
+        { status: 409 },
+      );
+    }
+  }
+
   // Hash credentials
   const hashedPassword = password ? await bcrypt.hash(password, 10) : null;
   const hashedPin = pinCode ? await bcrypt.hash(pinCode, 10) : null;
@@ -108,7 +128,8 @@ export async function POST(request: Request) {
   const user = await prisma.user.create({
     data: {
       name,
-      email: role !== "DRIVER" ? email : null,
+      email: role !== "DRIVER" ? (email || null) : null,
+      username: role !== "DRIVER" ? (username || null) : null,
       password: hashedPassword,
       pinCode: hashedPin,
       role,
@@ -116,6 +137,7 @@ export async function POST(request: Request) {
     select: {
       id: true,
       email: true,
+      username: true,
       name: true,
       role: true,
       createdAt: true,

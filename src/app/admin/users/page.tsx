@@ -2,8 +2,9 @@
  * Admin: User management page.
  *
  * - Table of users with roles
- * - Add user form
+ * - Add user form (with username support for ADMIN/STAFF)
  * - Edit/delete user actions
+ * - Quick password/PIN reset button per user
  * - Admin-only access (enforced by admin layout + proxy)
  */
 
@@ -14,6 +15,7 @@ import { useCallback, useEffect, useState } from "react";
 interface UserRow {
   id: string;
   email: string | null;
+  username: string | null;
   name: string;
   role: "ADMIN" | "STAFF" | "DRIVER";
   createdAt: string;
@@ -32,11 +34,19 @@ export default function AdminUsersPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [pinCode, setPinCode] = useState("");
   const [role, setRole] = useState<Role>("STAFF");
   const [formError, setFormError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+
+  // Password reset state
+  const [resetId, setResetId] = useState<string | null>(null);
+  const [resetValue, setResetValue] = useState("");
+  const [resetError, setResetError] = useState<string | null>(null);
+  const [resetSuccess, setResetSuccess] = useState<string | null>(null);
+  const [isResetting, setIsResetting] = useState(false);
 
   const fetchUsers = useCallback(async () => {
     try {
@@ -60,6 +70,7 @@ export default function AdminUsersPage() {
   const resetForm = () => {
     setName("");
     setEmail("");
+    setUsername("");
     setPassword("");
     setPinCode("");
     setRole("STAFF");
@@ -74,15 +85,14 @@ export default function AdminUsersPage() {
     setIsSaving(true);
 
     try {
-      // Hash password or PIN on the client side before sending
-      // (the API route also hashes, but for edits we need to handle empty fields)
       const body: Record<string, unknown> = {
         name,
         role,
       };
 
-      if (role !== "DRIVER" && email) {
-        body.email = email;
+      if (role !== "DRIVER") {
+        if (email) body.email = email;
+        if (username) body.username = username;
       }
 
       // Only send password if it was entered (not for edits where it's blank)
@@ -123,6 +133,7 @@ export default function AdminUsersPage() {
     setEditingId(user.id);
     setName(user.name);
     setEmail(user.email ?? "");
+    setUsername(user.username ?? "");
     setRole(user.role);
     setPassword("");
     setPinCode("");
@@ -144,6 +155,64 @@ export default function AdminUsersPage() {
     } catch {
       setError("Failed to delete user");
     }
+  };
+
+  // --- Quick password/PIN reset ---
+  const handleResetClick = (user: UserRow) => {
+    const label = user.role === "DRIVER" ? "PIN" : "password";
+    if (!confirm(`Are you sure you want to reset this user's ${label}?`)) return;
+    setResetId(user.id);
+    setResetValue("");
+    setResetError(null);
+    setResetSuccess(null);
+  };
+
+  const handleResetSave = async () => {
+    if (!resetId) return;
+    setResetError(null);
+    setResetSuccess(null);
+    setIsResetting(true);
+
+    try {
+      const user = users.find((u) => u.id === resetId);
+      const body: Record<string, unknown> = {};
+      if (user?.role === "DRIVER") {
+        body.pinCode = resetValue;
+      } else {
+        body.password = resetValue;
+      }
+
+      const res = await fetch(`/api/admin/users/${resetId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+
+      if (!res.ok) {
+        const errText = await res.text().catch(() => "Reset failed");
+        throw new Error(errText);
+      }
+
+      setResetSuccess(
+        user?.role === "DRIVER" ? "PIN reset successfully" : "Password reset successfully",
+      );
+      setResetValue("");
+      setTimeout(() => {
+        setResetId(null);
+        setResetSuccess(null);
+      }, 2000);
+    } catch (err) {
+      setResetError(err instanceof Error ? err.message : "Reset failed");
+    } finally {
+      setIsResetting(false);
+    }
+  };
+
+  const handleResetCancel = () => {
+    setResetId(null);
+    setResetValue("");
+    setResetError(null);
+    setResetSuccess(null);
   };
 
   const formatDate = (dateStr: string | null) => {
@@ -230,18 +299,37 @@ export default function AdminUsersPage() {
                 </select>
               </div>
               {(role === "ADMIN" || role === "STAFF") && (
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-1">
-                    Email
-                  </label>
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:border-[var(--color-accent)]"
-                  />
-                </div>
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-1">
+                      Username{" "}
+                      <span className="text-xs text-zinc-400">
+                        (optional)
+                      </span>
+                    </label>
+                    <input
+                      type="text"
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
+                      placeholder="username"
+                      className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:border-[var(--color-accent)]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-1">
+                      Email{" "}
+                      <span className="text-xs text-zinc-400">
+                        (optional if username is set)
+                      </span>
+                    </label>
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:border-[var(--color-accent)]"
+                    />
+                  </div>
+                </>
               )}
               {(role === "ADMIN" || role === "STAFF") && (
                 <div>
@@ -353,6 +441,11 @@ export default function AdminUsersPage() {
                 <tr key={user.id} className="hover:bg-black/[0.02] dark:hover:bg-white/[0.02]">
                   <td className="px-4 py-3 text-sm text-foreground font-medium">
                     {user.name}
+                    {user.username && (
+                      <div className="text-xs text-zinc-400 mt-0.5">
+                        @{user.username}
+                      </div>
+                    )}
                   </td>
                   <td className="px-4 py-3 text-sm text-zinc-600 dark:text-zinc-400">
                     {user.email ?? "—"}
@@ -374,20 +467,70 @@ export default function AdminUsersPage() {
                     {formatDate(user.lastLogin)}
                   </td>
                   <td className="px-4 py-3 text-right">
-                    <div className="flex justify-end gap-2">
-                      <button
-                        onClick={() => handleEdit(user)}
-                        className="text-xs px-2 py-1 rounded text-zinc-600 dark:text-zinc-400 hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => handleDelete(user.id)}
-                        className="text-xs px-2 py-1 rounded text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
-                      >
-                        Delete
-                      </button>
-                    </div>
+                    {/* Inline password/PIN reset form */}
+                    {resetId === user.id ? (
+                      <div className="flex justify-end items-center gap-1.5">
+                        <input
+                          type="password"
+                          value={resetValue}
+                          onChange={(e) => setResetValue(e.target.value)}
+                          placeholder={user.role === "DRIVER" ? "New PIN" : "New password"}
+                          required
+                          autoFocus
+                          className="w-32 rounded border border-border bg-background px-2 py-1 text-xs text-foreground focus:outline-none focus:border-[var(--color-accent)]"
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") handleResetSave();
+                            if (e.key === "Escape") handleResetCancel();
+                          }}
+                        />
+                        <button
+                          onClick={handleResetSave}
+                          disabled={isResetting || !resetValue}
+                          className="text-xs px-2 py-1 rounded font-medium text-white disabled:opacity-50"
+                          style={{ backgroundColor: "var(--color-accent)" }}
+                        >
+                          {isResetting ? "..." : "Save"}
+                        </button>
+                        <button
+                          onClick={handleResetCancel}
+                          className="text-xs px-2 py-1 rounded border border-border text-foreground hover:bg-black/5 dark:hover:bg-white/5"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex justify-end gap-2">
+                        <button
+                          onClick={() => handleEdit(user)}
+                          className="text-xs px-2 py-1 rounded text-zinc-600 dark:text-zinc-400 hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleResetClick(user)}
+                          className="text-xs px-2 py-1 rounded text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/30 transition-colors"
+                        >
+                          {user.role === "DRIVER" ? "Reset PIN" : "Reset Password"}
+                        </button>
+                        <button
+                          onClick={() => handleDelete(user.id)}
+                          className="text-xs px-2 py-1 rounded text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    )}
+                    {/* Success message after reset */}
+                    {resetId === user.id && resetSuccess && (
+                      <div className="mt-1 text-xs text-green-600 dark:text-green-400 text-right">
+                        {resetSuccess}
+                      </div>
+                    )}
+                    {resetId === user.id && resetError && (
+                      <div className="mt-1 text-xs text-red-600 dark:text-red-400 text-right">
+                        {resetError}
+                      </div>
+                    )}
                   </td>
                 </tr>
               ))

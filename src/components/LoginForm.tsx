@@ -43,7 +43,7 @@ export function LoginForm() {
       if (result?.error) {
         setError(
           mode === "credentials"
-            ? "Invalid email or password."
+            ? "Invalid username/email or password."
             : "Invalid PIN code.",
         );
         return;
@@ -132,8 +132,8 @@ export function LoginForm() {
         <div className="mb-4 px-1">
           {mode === "credentials" ? (
             <p className="text-xs text-zinc-500 dark:text-zinc-400">
-              For office staff, managers, and administrators. Use your Leland
-              Mills email and password.
+              For office staff, managers, and administrators. Use your username
+              or Leland Mills email and password.
             </p>
           ) : (
             <p className="text-xs text-zinc-500 dark:text-zinc-400">
@@ -151,16 +151,16 @@ export function LoginForm() {
                   htmlFor="email"
                   className="block text-sm font-medium text-foreground mb-1.5"
                 >
-                  Email
+                  Username or Email
                 </label>
                 <input
                   id="email"
-                  type="email"
+                  type="text"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  autoComplete="email"
-                  placeholder="you@lelandmills.com"
+                  autoComplete="username"
+                  placeholder="username or email"
                   className="w-full rounded-lg border border-border bg-background px-3.5 py-2.5 text-sm text-foreground placeholder:text-zinc-400 focus:outline-none focus:border-[var(--color-accent)] focus:ring-1 focus:ring-[var(--color-accent)]"
                 />
               </div>
