@@ -5,6 +5,7 @@
  *
  * - Message list area (scrollable, auto-scroll to bottom)
  * - Input box at bottom with send button
+ * - File attachment button (paperclip) with image thumbnail previews
  * - Loading state (typing indicator dots)
  * - Empty state
  * - Fetches and sends messages via the /api/chat route
@@ -18,7 +19,7 @@ import {
   useState,
   type FormEvent,
 } from "react";
-import { ChatMessage, type ChatMessageData } from "./ChatMessage";
+import { ChatMessage, type ChatMessageData, type ChatAttachment } from "./ChatMessage";
 
 interface ChatInterfaceProps {
   conversationId?: string;
@@ -34,6 +35,7 @@ interface ApiResponse {
   userMessageId?: string;
   assistantMessageId?: string;
   createdAt: string;
+  attachments?: ChatAttachment[];
 }
 
 export function ChatInterface({
@@ -47,9 +49,11 @@ export function ChatInterface({
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [pendingAttachments, setPendingAttachments] = useState<ChatAttachment[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const currentConversationId = useRef<string | undefined>(conversationId);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Update when conversationId prop changes (navigating to a different conversation)
   useEffect(() => {
@@ -66,6 +70,57 @@ export function ChatInterface({
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isLoading]);
 
+  // Handle file selection
+  const handleFileSelect = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    for (const file of Array.from(files)) {
+      // Basic client-side validation
+      if (!file.type.startsWith("image/")) {
+        setError(`File "${file.name}" is not an image. Only images are allowed.`);
+        continue;
+      }
+      if (file.size > 10 * 1024 * 1024) {
+        setError(`File "${file.name}" is too large. Maximum size is 10 MB.`);
+        continue;
+      }
+
+      setError(null);
+
+      try {
+        const formData = new FormData();
+        formData.append("file", file);
+
+        const res = await fetch("/api/upload", {
+          method: "POST",
+          body: formData,
+        });
+
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({ error: "Upload failed" }));
+          setError(errData.error || "Upload failed");
+          continue;
+        }
+
+        const data: ChatAttachment = await res.json();
+        setPendingAttachments((prev) => [...prev, data]);
+      } catch {
+        setError(`Failed to upload "${file.name}"`);
+      }
+    }
+
+    // Reset file input so the same file can be selected again
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  }, []);
+
+  // Remove a pending attachment
+  const removeAttachment = useCallback((id: string) => {
+    setPendingAttachments((prev) => prev.filter((a) => a.id !== id));
+  }, []);
+
   const sendMessage = useCallback(
     async (e: FormEvent) => {
       e.preventDefault();
@@ -75,11 +130,16 @@ export function ChatInterface({
       setError(null);
       setInput("");
 
-      // Add user message immediately
+      // Capture attachments for this message, then clear pending
+      const attachmentsToSend = [...pendingAttachments];
+      setPendingAttachments([]);
+
+      // Add user message immediately (with attachments for inline display)
       const userMsg: ChatMessageData = {
         role: "USER",
         content: text,
         createdAt: new Date(),
+        attachments: attachmentsToSend.length > 0 ? attachmentsToSend : undefined,
       };
       setMessages((prev) => [...prev, userMsg]);
       setIsLoading(true);
@@ -91,6 +151,7 @@ export function ChatInterface({
           body: JSON.stringify({
             message: text,
             conversationId: currentConversationId.current,
+            attachments: attachmentsToSend.length > 0 ? attachmentsToSend : undefined,
           }),
         });
 
@@ -135,12 +196,14 @@ export function ChatInterface({
             prev.filter((m) => m !== userMsg),
           );
           setInput(text); // Restore input
+          // Restore attachments too
+          setPendingAttachments(attachmentsToSend);
         }
       } finally {
         setIsLoading(false);
       }
     },
-    [input, isLoading, onConversationCreated],
+    [input, isLoading, onConversationCreated, pendingAttachments],
   );
 
   const isEmpty = messages.length === 0 && !isLoading;
@@ -177,7 +240,7 @@ export function ChatInterface({
               {/* Safety & Compliance */}
               <div className="text-left">
                 <p className="text-[10px] font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-600 mb-1.5 px-1">
-                  Safety & Compliance
+                  Safety &amp; Compliance
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {[
@@ -200,7 +263,7 @@ export function ChatInterface({
               {/* Inventory & Feed */}
               <div className="text-left">
                 <p className="text-[10px] font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-600 mb-1.5 px-1">
-                  Inventory & Feed
+                  Inventory &amp; Feed
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {[
@@ -279,12 +342,72 @@ export function ChatInterface({
         </div>
       )}
 
+      {/* Pending attachment previews */}
+      {pendingAttachments.length > 0 && (
+        <div className="px-4 py-2 border-t border-border bg-surface">
+          <div className="max-w-3xl mx-auto flex flex-wrap gap-2">
+            {pendingAttachments.map((att) => (
+              <div key={att.id} className="relative group">
+                <img
+                  src={att.url}
+                  alt={att.filename}
+                  className="w-16 h-16 object-cover rounded-lg border border-border"
+                />
+                <button
+                  onClick={() => removeAttachment(att.id)}
+                  className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-zinc-800 text-white text-xs flex items-center justify-center hover:bg-red-600 transition-colors"
+                  aria-label="Remove attachment"
+                >
+                  x
+                </button>
+                <span className="block text-[10px] text-zinc-500 truncate w-16 mt-0.5">
+                  {att.filename}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Input area */}
       <div className="border-t border-border bg-background">
         <form
           onSubmit={sendMessage}
           className="max-w-3xl mx-auto flex items-end gap-2 p-4"
         >
+          {/* Hidden file input */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/gif"
+            multiple
+            onChange={handleFileSelect}
+            className="hidden"
+          />
+
+          {/* Paperclip / attach button */}
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isLoading}
+            className="shrink-0 rounded-xl p-2.5 text-foreground border border-border bg-surface hover:border-[var(--color-accent)] hover:text-[var(--color-accent)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            aria-label="Attach image"
+            title="Attach image"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={2}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="w-5 h-5"
+            >
+              <path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 17.93 8.83l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48" />
+            </svg>
+          </button>
+
           <textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}

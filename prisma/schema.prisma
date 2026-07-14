@@ -63,10 +63,26 @@ model Message {
   content       String
   createdAt     DateTime    @default(now())
 
-  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  conversation Conversation    @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  attachments  FileAttachment[]
 
   @@index([conversationId])
   @@map("messages")
+}
+
+model FileAttachment {
+  id        String   @id @default(uuid()) @db.Uuid
+  messageId String   @db.Uuid
+  filename  String
+  filepath  String
+  mimetype  String
+  filesize  Int
+  createdAt DateTime @default(now())
+
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@index([messageId])
+  @@map("file_attachments")
 }
 
 model KnowledgeEntry {

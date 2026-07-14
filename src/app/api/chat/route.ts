@@ -43,7 +43,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  let body: { message?: string; conversationId?: string };
+  let body: {
+    message?: string;
+    conversationId?: string;
+    attachments?: { id: string; filename: string; url: string; mimetype: string; filesize: number }[];
+  };
   try {
     body = await request.json();
   } catch {
@@ -53,7 +57,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const { message, conversationId } = body;
+  const { message, conversationId, attachments } = body;
 
   if (!message || typeof message !== "string") {
     return NextResponse.json(
@@ -114,6 +118,27 @@ export async function POST(request: Request) {
       content: message,
     },
   });
+
+  // Link any uploaded attachments to this message
+  let userAttachments: { id: string; filename: string; url: string; mimetype: string; filesize: number }[] = [];
+  if (attachments && Array.isArray(attachments) && attachments.length > 0) {
+    try {
+      await prisma.fileAttachment.createMany({
+        data: attachments.map((att) => ({
+          id: att.id,
+          messageId: userMessage.id,
+          filename: att.filename,
+          filepath: att.url,
+          mimetype: att.mimetype,
+          filesize: att.filesize,
+        })),
+      });
+      // Only return attachments that were successfully created
+      userAttachments = attachments;
+    } catch {
+      // Non-fatal — attachments are optional metadata
+    }
+  }
 
   // NOTE: Knowledge base interception DISABLED (2026-07-07).
   // The auto-capture + global search was causing cross-conversation pollution:
@@ -202,5 +227,6 @@ export async function POST(request: Request) {
     assistantMessageId: assistantMessage.id,
     source: "hermes_agent",
     createdAt: new Date().toISOString(),
+    attachments: userAttachments,
   });
 }

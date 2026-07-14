@@ -8,15 +8,25 @@
  * - Supports basic markdown rendering (bold, italic, code, lists, headings)
  * - Timestamp display
  * - Dark mode variants
+ * - Inline image attachment display
  */
 
 import { useMemo } from "react";
+
+export interface ChatAttachment {
+  id: string;
+  filename: string;
+  url: string;
+  mimetype: string;
+  filesize: number;
+}
 
 export interface ChatMessageData {
   id?: string;
   role: "USER" | "ASSISTANT" | "SYSTEM";
   content: string;
   createdAt?: string | Date;
+  attachments?: ChatAttachment[];
 }
 
 /**
@@ -123,6 +133,12 @@ function formatTime(date: string | Date | undefined): string {
   });
 }
 
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
+  return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+}
+
 export function ChatMessage({ message }: { message: ChatMessageData }) {
   const isUser = message.role === "USER";
   const isSystem = message.role === "SYSTEM";
@@ -164,6 +180,29 @@ export function ChatMessage({ message }: { message: ChatMessageData }) {
             <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
               Jake
             </span>
+          </div>
+        )}
+        {/* Inline image attachments */}
+        {message.attachments && message.attachments.length > 0 && (
+          <div className="flex flex-wrap gap-2 mb-2">
+            {message.attachments.map((att) => (
+              <a
+                key={att.id}
+                href={att.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block group"
+              >
+                <img
+                  src={att.url}
+                  alt={att.filename}
+                  className="max-w-[200px] max-h-[200px] rounded-lg object-cover border border-white/20 group-hover:opacity-80 transition-opacity"
+                />
+                <span className="block text-[10px] mt-0.5 text-zinc-400 truncate max-w-[200px]">
+                  {att.filename} ({formatFileSize(att.filesize)})
+                </span>
+              </a>
+            ))}
           </div>
         )}
         <div
