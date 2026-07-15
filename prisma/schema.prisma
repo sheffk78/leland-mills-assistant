@@ -23,9 +23,10 @@ model User {
   createdAt DateTime @default(now())
   lastLogin DateTime?
 
-  conversations Conversation[]
-  knowledge     KnowledgeEntry[]
-  usageLogs     UsageLog[]
+  conversations     Conversation[]
+  knowledge         KnowledgeEntry[]
+  usageLogs         UsageLog[]
+  userPermissions   UserPermission[]
 
   @@map("users")
 }
@@ -40,6 +41,9 @@ model Role {
   isSystem     Boolean  @default(false)    // System roles cannot be deleted
   createdAt    DateTime @default(now())
   updatedAt    DateTime @default(now())
+
+  rolePermissions     RolePermission[]
+  skillAssignments    SkillRoleAssignment[]
 
   @@map("roles")
 }
@@ -140,4 +144,143 @@ model UsageLog {
   @@index([role])
   @@index([createdAt])
   @@map("usage_logs")
+}
+
+// ---------------------------------------------------------------------------
+// Permissions — granular capability keys that govern what each role/user can do
+// ---------------------------------------------------------------------------
+
+// Catalog of all known permission keys (e.g. "inventory:read", "users:manage").
+// One row per permission. Seeded by scripts/migrate-permissions-skills.ts.
+model Permission {
+  id          String   @id @default(uuid()) @db.Uuid
+  key         String   @unique             // e.g. "inventory:read"
+  name        String                       // Human label: "Read Inventory"
+  description String?                      // What this permission grants
+  category    String?                      // Grouping: "Operations", "Admin", etc.
+  createdAt   DateTime @default(now())
+
+  rolePermissions RolePermission[]
+  userPermissions UserPermission[]
+
+  @@map("permissions")
+}
+
+// Many-to-many between Role and Permission.
+// A role gets a permission via an explicit allow or deny row.
+// Deny rows take precedence over allow rows when evaluating permissions.
+model RolePermission {
+  id            String   @id @default(uuid()) @db.Uuid
+  roleId        String   @db.Uuid
+  permissionKey String                       // references Permission.key (not enforced by FK on key)
+  effect        String   @default("allow")   // "allow" | "deny"
+  createdAt     DateTime @default(now())
+
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionKey], references: [key], onDelete: Cascade)
+
+  @@unique([roleId, permissionKey])
+  @@index([roleId])
+  @@index([permissionKey])
+  @@map("role_permissions")
+}
+
+// Direct per-user permission overrides (allow or deny).
+// These take precedence over role-derived permissions.
+model UserPermission {
+  id            String   @id @default(uuid()) @db.Uuid
+  userId        String   @db.Uuid
+  permissionKey String                       // references Permission.key (not enforced by FK on key)
+  effect        String   @default("allow")   // "allow" | "deny"
+  createdAt     DateTime @default(now())
+
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionKey], references: [key], onDelete: Cascade)
+
+  @@unique([userId, permissionKey])
+  @@index([userId])
+  @@index([permissionKey])
+  @@map("user_permissions")
+}
+
+// ---------------------------------------------------------------------------
+// Skills — reusable capabilities Archie can invoke, assignable per role
+// ---------------------------------------------------------------------------
+
+// A skill is a named, versioned capability (e.g. "inventory-search", "route-planner").
+// The content is the skill body (markdown / instructions / code) stored inline.
+model Skill {
+  id          String   @id @default(uuid()) @db.Uuid
+  key         String   @unique             // slug: "inventory-search"
+  name        String                       // Display name
+  description String?                      // What the skill does
+  category    String?                      // Grouping: "Operations", "Compliance", etc.
+  filePath    String?                      // Optional path to a file on disk backing this skill
+  content     String? @db.Text             // Inline skill body
+  isActive    Boolean  @default(true)      // Soft-disable without deleting
+  isSystem    Boolean  @default(false)      // System skills cannot be deleted
+  version     Int      @default(1)          // Current version number
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  roleAssignments SkillRoleAssignment[]
+  versions        SkillVersion[]
+
+  @@map("skills")
+}
+
+// Which roles have which skills enabled. A skill may be assigned to many roles
+// and a role may have many skills. roleKey references Role.key (not enforced by FK).
+model SkillRoleAssignment {
+  id        String   @id @default(uuid()) @db.Uuid
+  skillId   String   @db.Uuid
+  roleKey   String                       // references Role.key
+  isEnabled Boolean  @default(true)
+  assignedAt DateTime @default(now())
+
+  skill Skill @relation(fields: [skillId], references: [id], onDelete: Cascade)
+  role  Role  @relation(fields: [roleKey], references: [key], onDelete: Cascade)
+
+  @@unique([skillId, roleKey])
+  @@index([skillId])
+  @@index([roleKey])
+  @@map("skill_role_assignments")
+}
+
+// Version history for a skill. Each edit creates a new row.
+model SkillVersion {
+  id        String   @id @default(uuid()) @db.Uuid
+  skillId   String   @db.Uuid
+  version   Int                          // version number
+  content   String?  @db.Text            // snapshot of skill content at this version
+  createdBy String?                      // user id or "system"
+  createdAt DateTime @default(now())
+
+  skill Skill @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@index([skillId])
+  @@map("skill_versions")
+}
+
+// ---------------------------------------------------------------------------
+// Agent profiles — maps Hermes profiles to Leland roles
+// ---------------------------------------------------------------------------
+
+// A Hermes profile (e.g. "default", "leland-staff") bound to a Leland role.
+// Used to route chat sessions to the right agent configuration.
+model AgentProfile {
+  id              String   @id @default(uuid()) @db.Uuid
+  profileKey      String   @unique                 // Hermes profile key: "default", "leland-staff"
+  name            String                           // Display name: "Leland Staff Agent"
+  description     String?                          // What this agent profile does
+  roleKey         String                           // references Role.key (not enforced by FK)
+  status          String   @default("active")      // "active" | "inactive" | "error"
+  model           String?                          // e.g. "gpt-5.2-mini"
+  provider        String?                          // e.g. "openai"
+  lastHealthCheck DateTime?                        // last time the profile was pinged
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([roleKey])
+  @@map("agent_profiles")
 }
