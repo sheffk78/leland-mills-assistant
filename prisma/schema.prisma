@@ -10,12 +10,6 @@ datasource db {
   provider = "postgresql"
 }
 
-enum MessageRole {
-  USER
-  ASSISTANT
-  SYSTEM
-}
-
 model User {
   id        String   @id @default(uuid()) @db.Uuid
   email     String?  @unique
@@ -67,7 +61,7 @@ model Conversation {
 model Message {
   id            String      @id @default(uuid()) @db.Uuid
   conversationId String     @db.Uuid
-  role          MessageRole
+  role          String
   content       String
   createdAt     DateTime    @default(now())
 
