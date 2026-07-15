@@ -2,10 +2,12 @@
  * Admin: User management page.
  *
  * - Table of users with roles
- * - Add user form (with username support for ADMIN/STAFF)
+ * - Add user form (with username support for non-driver roles)
  * - Edit/delete user actions
  * - Quick password/PIN reset button per user
  * - Admin-only access (enforced by admin layout + proxy)
+ *
+ * Roles are fetched dynamically from /api/roles — no hardcoded role list.
  */
 
 "use client";
@@ -17,15 +19,22 @@ interface UserRow {
   email: string | null;
   username: string | null;
   name: string;
-  role: "ADMIN" | "STAFF" | "DRIVER";
+  role: string;
   createdAt: string;
   lastLogin: string | null;
 }
 
-type Role = "ADMIN" | "STAFF" | "DRIVER";
+interface RoleOption {
+  id: string;
+  key: string;
+  name: string;
+  isAdmin: boolean;
+  isSystem: boolean;
+}
 
 export default function AdminUsersPage() {
   const [users, setUsers] = useState<UserRow[]>([]);
+  const [roles, setRoles] = useState<RoleOption[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -37,7 +46,7 @@ export default function AdminUsersPage() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [pinCode, setPinCode] = useState("");
-  const [role, setRole] = useState<Role>("STAFF");
+  const [role, setRole] = useState("staff");
   const [formError, setFormError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -63,9 +72,22 @@ export default function AdminUsersPage() {
     }
   }, []);
 
+  const fetchRoles = useCallback(async () => {
+    try {
+      const res = await fetch("/api/roles", { cache: "no-store" });
+      if (res.ok) {
+        const data = await res.json();
+        setRoles(data);
+      }
+    } catch {
+      // Non-fatal — role dropdown will be empty
+    }
+  }, []);
+
   useEffect(() => {
     fetchUsers();
-  }, [fetchUsers]);
+    fetchRoles();
+  }, [fetchUsers, fetchRoles]);
 
   const resetForm = () => {
     setName("");
@@ -73,7 +95,7 @@ export default function AdminUsersPage() {
     setUsername("");
     setPassword("");
     setPinCode("");
-    setRole("STAFF");
+    setRole("staff");
     setFormError(null);
     setEditingId(null);
     setShowForm(false);
@@ -90,7 +112,8 @@ export default function AdminUsersPage() {
         role,
       };
 
-      if (role !== "DRIVER") {
+      const isDriverType = role === "driver";
+      if (!isDriverType) {
         if (email) body.email = email;
         if (username) body.username = username;
       }
@@ -100,7 +123,7 @@ export default function AdminUsersPage() {
         body.password = password;
       }
 
-      if (role === "DRIVER" && pinCode) {
+      if (isDriverType && pinCode) {
         body.pinCode = pinCode;
       }
 
@@ -159,7 +182,7 @@ export default function AdminUsersPage() {
 
   // --- Quick password/PIN reset ---
   const handleResetClick = (user: UserRow) => {
-    const label = user.role === "DRIVER" ? "PIN" : "password";
+    const label = user.role === "driver" ? "PIN" : "password";
     if (!confirm(`Are you sure you want to reset this user's ${label}?`)) return;
     setResetId(user.id);
     setResetValue("");
@@ -176,7 +199,7 @@ export default function AdminUsersPage() {
     try {
       const user = users.find((u) => u.id === resetId);
       const body: Record<string, unknown> = {};
-      if (user?.role === "DRIVER") {
+      if (user?.role === "driver") {
         body.pinCode = resetValue;
       } else {
         body.password = resetValue;
@@ -194,7 +217,7 @@ export default function AdminUsersPage() {
       }
 
       setResetSuccess(
-        user?.role === "DRIVER" ? "PIN reset successfully" : "Password reset successfully",
+        user?.role === "driver" ? "PIN reset successfully" : "Password reset successfully",
       );
       setResetValue("");
       setTimeout(() => {
@@ -224,6 +247,15 @@ export default function AdminUsersPage() {
       hour: "numeric",
       minute: "2-digit",
     });
+  };
+
+  // Helper: get display name for a role key
+  const getRoleName = (key: string) => roles.find((r) => r.key === key)?.name ?? key;
+  const getRoleColor = (key: string) => {
+    if (key === "admin") return "bg-purple-100 text-purple-700 dark:bg-purple-950/40 dark:text-purple-300";
+    if (key === "staff") return "bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300";
+    if (key === "driver") return "bg-green-100 text-green-700 dark:bg-green-950/40 dark:text-green-300";
+    return "bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300";
   };
 
   if (isLoading) {
@@ -290,15 +322,21 @@ export default function AdminUsersPage() {
                 </label>
                 <select
                   value={role}
-                  onChange={(e) => setRole(e.target.value as Role)}
+                  onChange={(e) => setRole(e.target.value)}
                   className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:border-[var(--color-accent)]"
                 >
-                  <option value="STAFF">Staff</option>
-                  <option value="ADMIN">Admin</option>
-                  <option value="DRIVER">Driver</option>
+                  {roles.length === 0 ? (
+                    <option value="staff">Staff</option>
+                  ) : (
+                    roles.map((r) => (
+                      <option key={r.key} value={r.key}>
+                        {r.name}
+                      </option>
+                    ))
+                  )}
                 </select>
               </div>
-              {(role === "ADMIN" || role === "STAFF") && (
+              {role !== "driver" && (
                 <>
                   <div>
                     <label className="block text-sm font-medium text-foreground mb-1">
@@ -331,7 +369,7 @@ export default function AdminUsersPage() {
                   </div>
                 </>
               )}
-              {(role === "ADMIN" || role === "STAFF") && (
+              {role !== "driver" && (
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-1">
                     Password{" "}
@@ -351,7 +389,7 @@ export default function AdminUsersPage() {
                   />
                 </div>
               )}
-              {role === "DRIVER" && (
+              {role === "driver" && (
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-1">
                     PIN Code{" "}
@@ -452,15 +490,9 @@ export default function AdminUsersPage() {
                   </td>
                   <td className="px-4 py-3">
                     <span
-                      className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                        user.role === "ADMIN"
-                          ? "bg-purple-100 text-purple-700 dark:bg-purple-950/40 dark:text-purple-300"
-                          : user.role === "STAFF"
-                            ? "bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300"
-                            : "bg-green-100 text-green-700 dark:bg-green-950/40 dark:text-green-300"
-                      }`}
+                      className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${getRoleColor(user.role)}`}
                     >
-                      {user.role}
+                      {getRoleName(user.role)}
                     </span>
                   </td>
                   <td className="px-4 py-3 text-sm text-zinc-500 dark:text-zinc-400 hidden md:table-cell">
@@ -474,7 +506,7 @@ export default function AdminUsersPage() {
                           type="password"
                           value={resetValue}
                           onChange={(e) => setResetValue(e.target.value)}
-                          placeholder={user.role === "DRIVER" ? "New PIN" : "New password"}
+                          placeholder={user.role === "driver" ? "New PIN" : "New password"}
                           required
                           autoFocus
                           className="w-32 rounded border border-border bg-background px-2 py-1 text-xs text-foreground focus:outline-none focus:border-[var(--color-accent)]"
@@ -510,7 +542,7 @@ export default function AdminUsersPage() {
                           onClick={() => handleResetClick(user)}
                           className="text-xs px-2 py-1 rounded text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/30 transition-colors"
                         >
-                          {user.role === "DRIVER" ? "Reset PIN" : "Reset Password"}
+                          {user.role === "driver" ? "Reset PIN" : "Reset Password"}
                         </button>
                         <button
                           onClick={() => handleDelete(user.id)}
@@ -538,10 +570,6 @@ export default function AdminUsersPage() {
           </tbody>
         </table>
       </div>
-
-      {/* TODO: Jake should seed an initial admin user via prisma seed or CLI.
-          Until then, the database will have no users and login will fail.
-          Run: npx prisma db push && npx tsx scripts/seed-admin.ts */}
     </div>
   );
 }

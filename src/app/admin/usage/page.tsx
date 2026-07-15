@@ -13,7 +13,7 @@
  */
 
 import { getUsageStats, getLimitsForRole, DEFAULT_LIMITS } from "@/lib/rate-limiter";
-import type { Role } from "@/generated/prisma/enums";
+import { prisma } from "@/lib/db";
 import { UsageLimitEditor } from "@/components/UsageLimitEditor";
 
 // Force dynamic — always fresh data
@@ -29,14 +29,20 @@ export default async function AdminUsagePage() {
     statsError = err instanceof Error ? err.message : "Failed to load stats";
   }
 
+  // Get all roles from the Role table
+  const roles = await prisma.role.findMany({
+    select: { key: true, name: true },
+    orderBy: { name: "asc" },
+  });
+  const roleKeys = roles.map((r) => r.key);
+
   // Get current limits for all roles
-  const roles: Role[] = ["ADMIN", "STAFF", "DRIVER"];
   const limits: Record<string, { hourly: number; daily: number; monthly: number }> = {};
-  for (const role of roles) {
+  for (const key of roleKeys) {
     try {
-      limits[role] = await getLimitsForRole(role);
+      limits[key] = await getLimitsForRole(key);
     } catch {
-      limits[role] = DEFAULT_LIMITS[role];
+      limits[key] = DEFAULT_LIMITS[key] ?? DEFAULT_LIMITS.staff;
     }
   }
 
@@ -134,13 +140,13 @@ export default async function AdminUsagePage() {
           <h3 className="text-sm font-semibold text-foreground mb-3">Messages by Role (This Month)</h3>
           <div className="space-y-2">
             {roles.map((role) => {
-              const count = stats?.byRoleThisMonth.find((r) => r.role === role)?.count ?? 0;
+              const count = stats?.byRoleThisMonth.find((r) => (r.role as string).toLowerCase() === role.key)?.count ?? 0;
               const total = stats?.totalThisMonth ?? 1;
               const pct = total > 0 ? Math.round((count / total) * 100) : 0;
               return (
-                <div key={role}>
+                <div key={role.key}>
                   <div className="flex items-center justify-between text-sm mb-1">
-                    <span className="text-foreground font-medium">{role}</span>
+                    <span className="text-foreground font-medium">{role.name}</span>
                     <span className="text-zinc-500">{count} ({pct}%)</span>
                   </div>
                   <div className="h-2 bg-zinc-200 dark:bg-zinc-800 rounded-full overflow-hidden">
@@ -148,7 +154,7 @@ export default async function AdminUsagePage() {
                       className="h-full rounded-full"
                       style={{
                         width: `${pct}%`,
-                        backgroundColor: role === "ADMIN" ? "#FFB800" : role === "STAFF" ? "#3b82f6" : "#10b981",
+                        backgroundColor: "var(--color-accent, #00B4A6)",
                       }}
                     />
                   </div>
@@ -179,22 +185,22 @@ export default async function AdminUsagePage() {
           <h3 className="text-sm font-semibold text-foreground mb-3">Daily Messages (Last 7 Days)</h3>
           <div className="flex items-end gap-2 h-32">
             {stats.dailyBreakdown.map((day) => {
-              const maxTotal = Math.max(...stats.dailyBreakdown.map((d) => d.total), 1);
-              const heightPct = (day.total / maxTotal) * 100;
+              const maxTotal = Math.max(...stats.dailyBreakdown.map((d) => d.total as number), 1);
+              const heightPct = ((day.total as number) / maxTotal) * 100;
               return (
-                <div key={day.date} className="flex-1 flex flex-col items-center gap-1">
-                  <span className="text-xs text-zinc-500">{day.total}</span>
+                <div key={String(day.date)} className="flex-1 flex flex-col items-center gap-1">
+                  <span className="text-xs text-zinc-500">{String(day.total)}</span>
                   <div className="w-full flex flex-col justify-end" style={{ height: "80px" }}>
                     <div
                       className="w-full rounded-t"
                       style={{
                         height: `${heightPct}%`,
-                        backgroundColor: "var(--color-accent, #FFB800)",
-                        minHeight: day.total > 0 ? "4px" : "0",
+                        backgroundColor: "var(--color-accent, #00B4A6)",
+                        minHeight: (day.total as number) > 0 ? "4px" : "0",
                       }}
                     />
                   </div>
-                  <span className="text-xs text-zinc-400">{day.date.slice(5)}</span>
+                  <span className="text-xs text-zinc-400">{String(day.date).slice(5)}</span>
                 </div>
               );
             })}
@@ -216,24 +222,27 @@ export default async function AdminUsagePage() {
               </tr>
             </thead>
             <tbody>
-              {stats.topUsersThisMonth.map((user, i) => (
-                <tr key={user.userId} className="border-b border-border/50">
-                  <td className="py-2 text-zinc-400">{i + 1}</td>
-                  <td className="py-2 text-foreground font-medium">{user.name}</td>
-                  <td className="py-2">
-                    <span
-                      className="px-2 py-0.5 rounded-full text-xs font-medium"
-                      style={{
-                        backgroundColor: user.role === "ADMIN" ? "rgba(255,184,0,0.15)" : user.role === "STAFF" ? "rgba(59,130,246,0.15)" : "rgba(16,185,129,0.15)",
-                        color: user.role === "ADMIN" ? "#FFB800" : user.role === "STAFF" ? "#3b82f6" : "#10b981",
-                      }}
-                    >
-                      {user.role}
-                    </span>
-                  </td>
-                  <td className="py-2 text-right text-foreground">{user.messageCount}</td>
-                </tr>
-              ))}
+              {stats.topUsersThisMonth.map((user, i) => {
+                const roleRecord = roles.find((r) => r.key === (user.role as string).toLowerCase());
+                return (
+                  <tr key={user.userId} className="border-b border-border/50">
+                    <td className="py-2 text-zinc-400">{i + 1}</td>
+                    <td className="py-2 text-foreground font-medium">{user.name}</td>
+                    <td className="py-2">
+                      <span
+                        className="px-2 py-0.5 rounded-full text-xs font-medium"
+                        style={{
+                          backgroundColor: "rgba(0,180,166,0.15)",
+                          color: "#00B4A6",
+                        }}
+                      >
+                        {roleRecord?.name ?? user.role}
+                      </span>
+                    </td>
+                    <td className="py-2 text-right text-foreground">{user.messageCount}</td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

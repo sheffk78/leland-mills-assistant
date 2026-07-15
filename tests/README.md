@@ -21,7 +21,7 @@ npm run test:coverage    # With coverage report
 
 ### E2E Tests (Playwright)
 ```bash
-npm run test:e2e:prod   # Against live Railway deployment
+npm run test:e2e:prod   # Against live VPS production deployment
 npm run test:e2e:local  # Against localhost:3000
 ```
 

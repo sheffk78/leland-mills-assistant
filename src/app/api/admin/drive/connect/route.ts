@@ -41,7 +41,7 @@ function getOAuth2Client() {
  */
 export async function POST() {
   const session = await auth();
-  if (!session?.user?.id || session.user.role !== "ADMIN") {
+  if (!session?.user?.id || !session.user.isAdmin) {
     return NextResponse.json({ error: "Admin access required" }, { status: 403 });
   }
 
@@ -70,7 +70,7 @@ export async function POST() {
  */
 export async function GET(request: Request) {
   const session = await auth();
-  if (!session?.user?.id || session.user.role !== "ADMIN") {
+  if (!session?.user?.id || !session.user.isAdmin) {
     return NextResponse.json({ error: "Admin access required" }, { status: 403 });
   }
 

@@ -14,11 +14,10 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import bcrypt from "bcryptjs";
-import type { Role } from "@/generated/prisma/enums";
 
 async function requireAdmin() {
   const session = await auth();
-  if (!session?.user?.id || session.user.role !== "ADMIN") {
+  if (!session?.user?.id || !session.user.isAdmin) {
     return null;
   }
   return session;
@@ -41,7 +40,7 @@ export async function PUT(
     username?: string;
     password?: string;
     pinCode?: string;
-    role?: Role;
+    role?: string;
   };
 
   try {
@@ -57,7 +56,7 @@ export async function PUT(
   }
 
   // Prevent self-deletion of admin role (safety)
-  if (session.user.id === id && body.role && body.role !== "ADMIN") {
+  if (session.user.id === id && body.role && body.role.toLowerCase() !== "admin") {
     return NextResponse.json(
       { error: "You cannot demote your own admin account" },
       { status: 400 },
@@ -66,12 +65,13 @@ export async function PUT(
 
   // Build update data
   const updateData: Record<string, unknown> = {};
+  const roleKey = body.role ? body.role.toLowerCase() : undefined;
 
   if (body.name) updateData.name = body.name;
-  if (body.role) updateData.role = body.role;
+  if (roleKey) updateData.role = roleKey;
 
-  // For non-DRIVER roles, update email
-  if (body.role !== "DRIVER" && body.email) {
+  // For non-driver roles, update email
+  if (roleKey !== "driver" && body.email) {
     // Check for duplicate email (excluding current user)
     const dup = await prisma.user.findFirst({
       where: { email: body.email, NOT: { id } },
@@ -85,8 +85,8 @@ export async function PUT(
     updateData.email = body.email;
   }
 
-  // For non-DRIVER roles, update username
-  if (body.role !== "DRIVER" && body.username !== undefined) {
+  // For non-driver roles, update username
+  if (roleKey !== "driver" && body.username !== undefined) {
     if (body.username) {
       // Check for duplicate username (excluding current user)
       const dup = await prisma.user.findFirst({
@@ -104,8 +104,8 @@ export async function PUT(
     }
   }
 
-  // If switching to DRIVER, clear email/password/username
-  if (body.role === "DRIVER") {
+  // If switching to driver, clear email/password/username
+  if (roleKey === "driver") {
     updateData.email = null;
     updateData.password = null;
     updateData.username = null;
@@ -121,8 +121,8 @@ export async function PUT(
     updateData.pinCode = await bcrypt.hash(body.pinCode, 10);
   }
 
-  // If switching away from DRIVER, clear PIN
-  if (body.role && body.role !== "DRIVER") {
+  // If switching away from driver, clear PIN
+  if (roleKey && roleKey !== "driver") {
     updateData.pinCode = null;
   }
 

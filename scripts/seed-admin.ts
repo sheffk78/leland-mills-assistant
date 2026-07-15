@@ -33,7 +33,7 @@ async function main() {
     const hashed = await bcrypt.hash(password, 10);
     await prisma.user.update({
       where: { id: existing.id },
-      data: { password: hashed, role: "ADMIN" },
+      data: { password: hashed, role: "admin" },
     });
     console.log("Admin password updated.");
     return;
@@ -46,7 +46,7 @@ async function main() {
       email,
       name,
       password: hashedPassword,
-      role: "ADMIN",
+      role: "admin",
     },
   });
 

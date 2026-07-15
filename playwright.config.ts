@@ -3,11 +3,11 @@ import { defineConfig, devices } from "@playwright/test";
 /**
  * Playwright E2E test configuration.
  *
- * Tests run against the live Railway deployment OR a local dev server.
+ * Tests run against the VPS production deployment OR a local dev server.
  * Set BASE_URL env var to point tests at a specific environment.
  *
  * Usage:
- *   BASE_URL=https://leland-mills-assistant-production-1bdd.up.railway.app npx playwright test
+ *   BASE_URL=https://assistant.lelandmills.com npx playwright test
  *   BASE_URL=http://localhost:3000 npx playwright test
  */
 const baseURL = process.env.BASE_URL ?? "http://localhost:3000";

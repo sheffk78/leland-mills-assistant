@@ -22,18 +22,26 @@ import { sendChatMessage } from "@/lib/hermes-client";
 import { checkRateLimit, logUsage } from "@/lib/rate-limiter";
 
 /**
- * Build a role-based system prompt for the Hermes agent.
- * This tells the agent what tools/capabilities the user has access to
- * based on their role in the company.
+ * Generic fallback system prompt when a role has no custom systemPrompt in the DB.
  */
-function getRoleContext(role: string, name: string): string {
-  const roleContexts: Record<string, string> = {
-    DRIVER: `[Context: The user ${name} is a DRIVER. Focus on: pre-trip inspections, delivery instructions, DOT hours of service, route information, delivery notes, vehicle defects. Do not provide information about sales leads, financial data, HR matters, or admin functions unless directly safety-relevant.]`,
-    STAFF: `[Context: The user ${name} is WAREHOUSE STAFF. Focus on: inventory management, feed types and storage, maintenance scheduling, delivery coordination, safety procedures, equipment operation. You can also help with basic sales lookups and customer delivery instructions.]`,
-    ADMIN: `[Context: The user ${name} is an ADMINISTRATOR with full access. You can help with: all operational tools, sales pipeline, financial summaries, HR policies, compliance, fleet management, strategic questions, and anything else related to running the business.]`,
-  };
+const GENERIC_PROMPT = `[Context: You are Archie, the AI assistant for Leland Mills. Help the user with their questions about company operations, tools, and resources.]`;
 
-  return roleContexts[role] ?? roleContexts.STAFF;
+/**
+ * Build a role-based system prompt for the Hermes agent.
+ * Looks up the Role by key from the database and uses its systemPrompt.
+ * Falls back to a generic prompt if the role has no custom prompt.
+ */
+async function getRolePrompt(roleKey: string, userName: string): Promise<string> {
+  const role = await prisma.role.findUnique({
+    where: { key: roleKey.toLowerCase() },
+    select: { systemPrompt: true, name: true },
+  });
+
+  if (role?.systemPrompt) {
+    return role.systemPrompt.replace(/\{name\}/g, userName);
+  }
+
+  return GENERIC_PROMPT;
 }
 
 export async function POST(request: Request) {
@@ -67,7 +75,7 @@ export async function POST(request: Request) {
   }
 
   // RATE LIMIT CHECK — verify user is within their limits before processing
-  const userRole = (session.user.role ?? "STAFF") as "ADMIN" | "STAFF" | "DRIVER";
+  const userRole = (session.user.role ?? "staff") as string;
   const rateCheck = await checkRateLimit(session.user.id, userRole);
 
   if (!rateCheck.allowed) {
@@ -160,9 +168,9 @@ export async function POST(request: Request) {
       select: { role: true, content: true },
     });
 
-    // Build the prompt with role-based context
-    const roleContext = getRoleContext(
-      session.user.role ?? "STAFF",
+    // Build the prompt with role-based context from the DB
+    const roleContext = await getRolePrompt(
+      session.user.role ?? "staff",
       session.user.name ?? "User",
     );
 

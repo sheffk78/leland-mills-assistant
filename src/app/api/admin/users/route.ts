@@ -12,11 +12,10 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import bcrypt from "bcryptjs";
-import type { Role } from "@/generated/prisma/enums";
 
 async function requireAdmin() {
   const session = await auth();
-  if (!session?.user?.id || session.user.role !== "ADMIN") {
+  if (!session?.user?.id || !session.user.isAdmin) {
     return null;
   }
   return session;
@@ -56,7 +55,7 @@ export async function POST(request: Request) {
     username?: string;
     password?: string;
     pinCode?: string;
-    role?: Role;
+    role?: string;
   };
 
   try {
@@ -71,30 +70,39 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Name is required" }, { status: 400 });
   }
 
-  if (!role || !["ADMIN", "STAFF", "DRIVER"].includes(role)) {
+  // Validate role — must be an existing Role key
+  if (!role) {
     return NextResponse.json({ error: "Valid role is required" }, { status: 400 });
   }
 
+  const roleKey = role.toLowerCase();
+  const roleRecord = await prisma.role.findUnique({ where: { key: roleKey } });
+  if (!roleRecord) {
+    return NextResponse.json({ error: `Invalid role: ${role}` }, { status: 400 });
+  }
+
   // Validate required fields per role
-  if (role !== "DRIVER") {
-    // For ADMIN/STAFF, require at least an email OR a username, and a password
+  // Driver-type roles use PIN; other roles use email/username + password
+  const isDriverType = roleKey === "driver";
+  if (!isDriverType) {
+    // For non-driver roles, require at least an email OR a username, and a password
     if (!email && !username) {
       return NextResponse.json(
-        { error: "Email or username is required for ADMIN/STAFF roles" },
+        { error: "Email or username is required for this role" },
         { status: 400 },
       );
     }
     if (!password) {
       return NextResponse.json(
-        { error: "Password is required for ADMIN/STAFF roles" },
+        { error: "Password is required for this role" },
         { status: 400 },
       );
     }
   }
 
-  if (role === "DRIVER" && !pinCode) {
+  if (isDriverType && !pinCode) {
     return NextResponse.json(
-      { error: "PIN code is required for DRIVER role" },
+      { error: "PIN code is required for driver role" },
       { status: 400 },
     );
   }
@@ -128,11 +136,11 @@ export async function POST(request: Request) {
   const user = await prisma.user.create({
     data: {
       name,
-      email: role !== "DRIVER" ? (email || null) : null,
-      username: role !== "DRIVER" ? (username || null) : null,
+      email: !isDriverType ? (email || null) : null,
+      username: !isDriverType ? (username || null) : null,
       password: hashedPassword,
       pinCode: hashedPin,
-      role,
+      role: roleKey,
     },
     select: {
       id: true,

@@ -10,10 +10,12 @@
  * Every message is logged for stats and enforcement.
  *
  * Knowledge base hits don't count against limits (they're free — no LLM call).
+ *
+ * Roles are now dynamic string keys (e.g. "admin", "staff", "driver") stored
+ * in the Role table. Default limits are used when no UsageLimit row exists.
  */
 
 import { prisma } from "@/lib/db";
-import type { Role } from "@/generated/prisma/enums";
 
 export interface RateLimitResult {
   allowed: boolean;
@@ -33,33 +35,54 @@ export interface RateLimitResult {
 }
 
 /**
- * Get the rate limits for a given role.
+ * Default limits per role key.
+ * These are conservative starting points. Jake can adjust via dashboard.
+ * Unknown roles get the staff-level defaults.
+ */
+export const DEFAULT_LIMITS: Record<string, { hourly: number; daily: number; monthly: number }> = {
+  admin: { hourly: 100, daily: 500, monthly: 10000 },
+  staff: { hourly: 50, daily: 200, monthly: 4000 },
+  driver: { hourly: 30, daily: 100, monthly: 2000 },
+};
+
+/**
+ * Get the default limits for a role key.
+ * Falls back to staff-level limits for unknown roles.
+ */
+function getDefaultLimitsForRole(roleKey: string): { hourly: number; daily: number; monthly: number } {
+  return DEFAULT_LIMITS[roleKey.toLowerCase()] ?? DEFAULT_LIMITS.staff;
+}
+
+/**
+ * Get the rate limits for a given role key.
  * If no limits row exists for the role, create one with defaults.
  */
-export async function getLimitsForRole(role: Role) {
+export async function getLimitsForRole(role: string) {
+  const roleKey = role.toLowerCase();
   let limits = await prisma.usageLimit.findUnique({
-    where: { role },
+    where: { role: roleKey },
   });
 
   if (!limits) {
+    const defaults = getDefaultLimitsForRole(roleKey);
     try {
       limits = await prisma.usageLimit.create({
         data: {
-          role,
-          hourlyLimit: DEFAULT_LIMITS[role].hourly,
-          dailyLimit: DEFAULT_LIMITS[role].daily,
-          monthlyLimit: DEFAULT_LIMITS[role].monthly,
+          role: roleKey,
+          hourlyLimit: defaults.hourly,
+          dailyLimit: defaults.daily,
+          monthlyLimit: defaults.monthly,
         },
       });
     } catch {
       // Race condition — another request created it. Fetch instead.
-      limits = await prisma.usageLimit.findUnique({ where: { role } });
+      limits = await prisma.usageLimit.findUnique({ where: { role: roleKey } });
     }
   }
 
   if (!limits) {
     // Shouldn't happen, but return defaults as fallback
-    return DEFAULT_LIMITS[role];
+    return getDefaultLimitsForRole(roleKey);
   }
 
   return {
@@ -70,26 +93,16 @@ export async function getLimitsForRole(role: Role) {
 }
 
 /**
- * Default limits per role.
- * These are conservative starting points. Jake can adjust via dashboard.
- */
-export const DEFAULT_LIMITS: Record<Role, { hourly: number; daily: number; monthly: number }> = {
-  ADMIN: { hourly: 100, daily: 500, monthly: 10000 },
-  STAFF: { hourly: 50, daily: 200, monthly: 4000 },
-  DRIVER: { hourly: 30, daily: 100, monthly: 2000 },
-};
-
-/**
  * Check whether a user is within their rate limits.
  * Does NOT log the message — call logUsage() separately after the message is processed.
  *
  * @param userId - The user's UUID
- * @param role - The user's role
+ * @param role - The user's role key (string)
  * @returns RateLimitResult with allowed flag and usage/limits info
  */
 export async function checkRateLimit(
   userId: string,
-  role: Role,
+  role: string,
 ): Promise<RateLimitResult> {
   const limits = await getLimitsForRole(role);
   const now = new Date();
@@ -152,7 +165,7 @@ export async function checkRateLimit(
  */
 export async function logUsage(
   userId: string,
-  role: Role,
+  role: string,
   conversationId: string,
   source: "hermes_agent" | "knowledge_base" = "hermes_agent",
 ): Promise<void> {
@@ -160,7 +173,7 @@ export async function logUsage(
     await prisma.usageLog.create({
       data: {
         userId,
-        role,
+        role: role.toLowerCase(),
         conversationId,
         source,
       },
@@ -231,16 +244,19 @@ export async function getUsageStats() {
   });
   const userMap = new Map(users.map((u) => [u.id, u]));
 
-  // Aggregate daily counts into { date: { role: count, total: count } }
-  const dailyMap = new Map<string, { date: string; total: number; DRIVER: number; STAFF: number; ADMIN: number }>();
+  // Aggregate daily counts into { date: { total: number, [roleKey]: number } }
+  const dailyMap = new Map<string, { date: string; total: number; [roleKey: string]: number | string }>();
   for (const log of dailyCounts) {
     const dateStr = log.createdAt.toISOString().slice(0, 10); // YYYY-MM-DD
-    const entry = dailyMap.get(dateStr) ?? { date: dateStr, total: 0, DRIVER: 0, STAFF: 0, ADMIN: 0 };
-    entry.total++;
-    entry[log.role as "DRIVER" | "STAFF" | "ADMIN"]++;
+    const entry = dailyMap.get(dateStr) ?? { date: dateStr, total: 0 };
+    entry.total = (entry.total as number) + 1;
+    const roleKey = (log.role as string).toLowerCase();
+    entry[roleKey] = ((entry[roleKey] as number) ?? 0) + 1;
     dailyMap.set(dateStr, entry);
   }
-  const dailyBreakdown = Array.from(dailyMap.values()).sort((a, b) => a.date.localeCompare(b.date));
+  const dailyBreakdown = Array.from(dailyMap.values()).sort((a, b) =>
+    String(a.date).localeCompare(String(b.date)),
+  );
 
   return {
     totalAllTime,
@@ -253,10 +269,9 @@ export async function getUsageStats() {
     topUsersThisMonth: topUsersThisMonth.map((u) => ({
       userId: u.userId,
       name: userMap.get(u.userId)?.name ?? "Unknown",
-      role: userMap.get(u.userId)?.role ?? "STAFF",
+      role: userMap.get(u.userId)?.role ?? "staff",
       messageCount: u._count,
     })),
     dailyBreakdown,
   };
 }
-

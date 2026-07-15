@@ -2,17 +2,40 @@ import NextAuth, { type NextAuthConfig } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/db";
-import type { Role } from "@/generated/prisma/enums";
 
 /**
  * NextAuth v5 configuration for the Leland Mills AI Assistant.
  *
  * Authentication supports two flows:
- *   1. Email + password (for ADMIN and STAFF roles)
- *   2. PIN code (for DRIVER role — simple login on mobile devices)
+ *   1. Email + password (for admin/staff roles)
+ *   2. PIN code (for driver role — simple login on mobile devices)
  *
  * Sessions use JWT strategy (required for Credentials provider).
+ *
+ * Role details (display name, isAdmin flag) are loaded from the Role table
+ * during sign-in and propagated to the JWT token and session.
  */
+
+/**
+ * Look up a Role by its key and return the display name and admin flag.
+ * Falls back to safe defaults if the Role row doesn't exist (e.g. before migration).
+ */
+async function getRoleDetails(roleKey: string): Promise<{ name: string; isAdmin: boolean }> {
+  const role = await prisma.role.findUnique({
+    where: { key: roleKey },
+    select: { name: true, isAdmin: true },
+  });
+
+  if (role) {
+    return { name: role.name, isAdmin: role.isAdmin };
+  }
+
+  // Fallback for legacy uppercase values or missing Role rows
+  const lowerKey = roleKey.toLowerCase();
+  if (lowerKey === "admin") return { name: "Admin", isAdmin: true };
+  if (lowerKey === "driver") return { name: "Driver", isAdmin: false };
+  return { name: "Staff", isAdmin: false };
+}
 
 export const authConfig: NextAuthConfig = {
   trustHost: true,
@@ -43,11 +66,17 @@ export const authConfig: NextAuthConfig = {
                 where: { id: user.id },
                 data: { lastLogin: new Date() },
               });
+
+              const roleKey = user.role.toLowerCase();
+              const { name: roleName, isAdmin } = await getRoleDetails(roleKey);
+
               return {
                 id: user.id,
                 email: user.email ?? undefined,
                 name: user.name,
-                role: user.role,
+                role: roleKey,
+                roleName,
+                isAdmin,
               };
             }
           }
@@ -84,11 +113,16 @@ export const authConfig: NextAuthConfig = {
             data: { lastLogin: new Date() },
           });
 
+          const roleKey = user.role.toLowerCase();
+          const { name: roleName, isAdmin } = await getRoleDetails(roleKey);
+
           return {
             id: user.id,
             email: user.email ?? undefined,
             name: user.name,
-            role: user.role,
+            role: roleKey,
+            roleName,
+            isAdmin,
           };
         }
 
@@ -104,14 +138,18 @@ export const authConfig: NextAuthConfig = {
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
-        token.role = user.role ?? "STAFF";
+        token.role = user.role ?? "staff";
+        token.roleName = user.roleName ?? "Staff";
+        token.isAdmin = user.isAdmin ?? false;
       }
       return token;
     },
     async session({ session, token }) {
       if (session.user) {
         session.user.id = token.id as string;
-        session.user.role = token.role as Role;
+        session.user.role = token.role as string;
+        session.user.roleName = token.roleName as string;
+        session.user.isAdmin = token.isAdmin as boolean;
       }
       return session;
     },

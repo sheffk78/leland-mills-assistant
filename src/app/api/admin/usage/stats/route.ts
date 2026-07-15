@@ -11,7 +11,7 @@ import { getUsageStats } from "@/lib/rate-limiter";
 
 export async function GET() {
   const session = await auth();
-  if (!session?.user?.id || session.user.role !== "ADMIN") {
+  if (!session?.user?.id || !session.user.isAdmin) {
     return NextResponse.json({ error: "Admin access required" }, { status: 403 });
   }
 

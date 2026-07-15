@@ -10,12 +10,6 @@ datasource db {
   provider = "postgresql"
 }
 
-enum Role {
-  ADMIN
-  STAFF
-  DRIVER
-}
-
 enum MessageRole {
   USER
   ASSISTANT
@@ -27,7 +21,7 @@ model User {
   email     String?  @unique
   username  String?  @unique
   name      String
-  role      Role     @default(STAFF)
+  role      String   @default("staff") // References Role.key
   // Hashed password for ADMIN and STAFF roles. Optional because DRIVERs log in with a PIN code only.
   password  String?
   // PIN code for DRIVER login. Stored hashed. Optional for ADMIN/STAFF logins.
@@ -40,6 +34,20 @@ model User {
   usageLogs     UsageLog[]
 
   @@map("users")
+}
+
+model Role {
+  id           String   @id @default(uuid()) @db.Uuid
+  key          String   @unique           // slug: "admin", "staff", "driver", "manager", etc.
+  name         String                     // Display name: "Admin", "Staff", "Driver"
+  description  String?                    // What this role can do
+  systemPrompt String?                    // Custom system prompt for Archie when chatting with users of this role
+  isAdmin      Boolean  @default(false)   // Grants admin panel access
+  isSystem     Boolean  @default(false)    // System roles cannot be deleted
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @default(now())
+
+  @@map("roles")
 }
 
 model Conversation {
@@ -110,9 +118,9 @@ model DriveFile {
   @@map("drive_files")
 }
 
-// Rate limiting config — one row per role. Admin can adjust via dashboard.
+// Rate limiting config — one row per role key. Admin can adjust via dashboard.
 model UsageLimit {
-  role            Role     @id // role is the primary key (DRIVER, STAFF, ADMIN)
+  role            String   @id // role key (e.g. "admin", "staff", "driver")
   hourlyLimit     Int      @default(30)  // max messages per hour
   dailyLimit      Int      @default(100) // max messages per day
   monthlyLimit    Int      @default(2000) // max messages per month
@@ -126,7 +134,7 @@ model UsageLimit {
 model UsageLog {
   id              String   @id @default(uuid()) @db.Uuid
   userId          String   @db.Uuid
-  role            Role
+  role            String   // role key (references Role.key, not enforced by FK)
   conversationId  String   @db.Uuid
   source          String   @default("hermes_agent") // "hermes_agent" or "knowledge_base"
   createdAt       DateTime @default(now())

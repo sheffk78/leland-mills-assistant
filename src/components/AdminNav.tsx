@@ -15,6 +15,7 @@ import { usePathname } from "next/navigation";
 
 const NAV_LINKS = [
   { href: "/admin/users", label: "Users" },
+  { href: "/admin/roles", label: "Roles" },
   { href: "/admin/usage", label: "Usage & Limits" },
   { href: "/admin/settings", label: "Settings" },
   { href: "/chat", label: "Chat" },

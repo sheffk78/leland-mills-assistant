@@ -4,35 +4,38 @@
  *
  * Admin-only access.
  *
- * PUT body: { role: "DRIVER"|"STAFF"|"ADMIN", hourlyLimit: number, dailyLimit: number, monthlyLimit: number }
+ * PUT body: { role: string, hourlyLimit: number, dailyLimit: number, monthlyLimit: number }
  */
 
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { getLimitsForRole, DEFAULT_LIMITS } from "@/lib/rate-limiter";
-import type { Role } from "@/generated/prisma/enums";
-
-const VALID_ROLES: Role[] = ["ADMIN", "STAFF", "DRIVER"];
 
 export async function GET() {
   const session = await auth();
-  if (!session?.user?.id || session.user.role !== "ADMIN") {
+  if (!session?.user?.id || !session.user.isAdmin) {
     return NextResponse.json({ error: "Admin access required" }, { status: 403 });
   }
 
+  // Get all roles from the Role table
+  const roles = await prisma.role.findMany({
+    select: { key: true, name: true },
+    orderBy: { name: "asc" },
+  });
+
   // Ensure all roles have limits rows
   const limits: Record<string, { hourly: number; daily: number; monthly: number }> = {};
-  for (const role of VALID_ROLES) {
-    limits[role] = await getLimitsForRole(role);
+  for (const role of roles) {
+    limits[role.key] = await getLimitsForRole(role.key);
   }
 
-  return NextResponse.json({ limits, defaults: DEFAULT_LIMITS });
+  return NextResponse.json({ limits, defaults: DEFAULT_LIMITS, roles });
 }
 
 export async function PUT(request: Request) {
   const session = await auth();
-  if (!session?.user?.id || session.user.role !== "ADMIN") {
+  if (!session?.user?.id || !session.user.isAdmin) {
     return NextResponse.json({ error: "Admin access required" }, { status: 403 });
   }
 
@@ -45,8 +48,16 @@ export async function PUT(request: Request) {
 
   const { role, hourlyLimit, dailyLimit, monthlyLimit } = body;
 
-  if (!role || !VALID_ROLES.includes(role as Role)) {
-    return NextResponse.json({ error: "Invalid role. Must be ADMIN, STAFF, or DRIVER." }, { status: 400 });
+  if (!role) {
+    return NextResponse.json({ error: "Role is required" }, { status: 400 });
+  }
+
+  const roleKey = role.toLowerCase();
+
+  // Validate that the role exists in the Role table
+  const roleRecord = await prisma.role.findUnique({ where: { key: roleKey } });
+  if (!roleRecord) {
+    return NextResponse.json({ error: `Invalid role: ${role}` }, { status: 400 });
   }
 
   // Validate limits are positive integers
@@ -63,12 +74,12 @@ export async function PUT(request: Request) {
   }
 
   // Upsert the limits row — find first, then update or create
-  const existing = await prisma.usageLimit.findUnique({ where: { role: role as Role } });
+  const existing = await prisma.usageLimit.findUnique({ where: { role: roleKey } });
   let updated;
 
   if (existing) {
     updated = await prisma.usageLimit.update({
-      where: { role: role as Role },
+      where: { role: roleKey },
       data: {
         hourlyLimit: h,
         dailyLimit: d,
@@ -78,7 +89,7 @@ export async function PUT(request: Request) {
   } else {
     updated = await prisma.usageLimit.create({
       data: {
-        role: role as Role,
+        role: roleKey,
         hourlyLimit: h,
         dailyLimit: d,
         monthlyLimit: m,
@@ -87,7 +98,7 @@ export async function PUT(request: Request) {
   }
 
   return NextResponse.json({
-    message: `Limits updated for ${role}`,
+    message: `Limits updated for ${roleRecord.name}`,
     limits: {
       role: updated.role,
       hourly: updated.hourlyLimit,
