@@ -182,27 +182,58 @@ export function ChatMessage({ message }: { message: ChatMessageData }) {
             </span>
           </div>
         )}
-        {/* Inline image attachments */}
+        {/* Attachment display — images show inline, documents show download card */}
         {message.attachments && message.attachments.length > 0 && (
           <div className="flex flex-wrap gap-2 mb-2">
-            {message.attachments.map((att) => (
-              <a
-                key={att.id}
-                href={att.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block group"
-              >
-                <img
-                  src={att.url}
-                  alt={att.filename}
-                  className="max-w-[200px] max-h-[200px] rounded-lg object-cover border border-white/20 group-hover:opacity-80 transition-opacity"
-                />
-                <span className="block text-[10px] mt-0.5 text-zinc-400 truncate max-w-[200px]">
-                  {att.filename} ({formatFileSize(att.filesize)})
-                </span>
-              </a>
-            ))}
+            {message.attachments.map((att) => {
+              const isImage = att.mimetype.startsWith("image/");
+              if (isImage) {
+                return (
+                  <div key={att.id}>
+                    <a
+                      href={att.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block group"
+                    >
+                      <img
+                        src={att.url}
+                        alt={att.filename}
+                        className="max-w-[200px] max-h-[200px] rounded-lg object-cover border border-white/20 group-hover:opacity-80 transition-opacity"
+                      />
+                    </a>
+                    <a
+                      href={`/api/files/${att.id}/download`}
+                      className="block text-[10px] mt-0.5 text-zinc-400 hover:text-[var(--color-accent)] transition-colors truncate max-w-[200px]"
+                    >
+                      ⬇ {att.filename} ({formatFileSize(att.filesize)})
+                    </a>
+                  </div>
+                );
+              }
+              // Non-image: render as download card with teal accent border
+              return (
+                <a
+                  key={att.id}
+                  href={`/api/files/${att.id}/download`}
+                  className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg border transition-colors max-w-[250px]"
+                  style={{ borderColor: "#00B4A6" }}
+                >
+                  <span className="text-2xl shrink-0">📄</span>
+                  <div className="min-w-0">
+                    <p className="text-xs font-medium text-foreground truncate">
+                      {att.filename}
+                    </p>
+                    <p className="text-[10px] text-zinc-400">
+                      {formatFileSize(att.filesize)}
+                    </p>
+                  </div>
+                  <span className="text-[var(--color-accent)] text-xs shrink-0 ml-auto">
+                    ⬇
+                  </span>
+                </a>
+              );
+            })}
           </div>
         )}
         <div

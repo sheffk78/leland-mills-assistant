@@ -2,7 +2,8 @@
  * POST /api/upload
  *
  * Accepts a multipart/form-data upload with a single "file" field.
- * Validates that the file is an image (jpeg, png, webp, gif) under 10 MB,
+ * Validates that the file is an image (jpeg, png, webp, gif) under 10 MB
+ * or a document (pdf, csv, xlsx, docx, txt, json) under 25 MB,
  * saves it to /public/uploads/ with a unique filename, and returns JSON
  * metadata about the stored file.
  *
@@ -16,14 +17,26 @@ import { join } from "path";
 import { auth } from "@/lib/auth";
 import { z } from "zod";
 
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
+const MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10 MB for images
+const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25 MB for non-image documents
 
-const ALLOWED_MIMETYPES = [
+const IMAGE_MIMETYPES = [
   "image/jpeg",
   "image/png",
   "image/webp",
   "image/gif",
 ] as const;
+
+const FILE_MIMETYPES = [
+  "application/pdf",
+  "text/csv",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "text/plain",
+  "application/json",
+] as const;
+
+const ALL_ALLOWED_MIMETYPES = [...IMAGE_MIMETYPES, ...FILE_MIMETYPES] as const;
 
 // Map mimetype to file extension
 const MIMETYPE_EXT: Record<string, string> = {
@@ -31,6 +44,12 @@ const MIMETYPE_EXT: Record<string, string> = {
   "image/png": "png",
   "image/webp": "webp",
   "image/gif": "gif",
+  "application/pdf": "pdf",
+  "text/csv": "csv",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": "xlsx",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document": "docx",
+  "text/plain": "txt",
+  "application/json": "json",
 };
 
 const uploadResponseSchema = z.object({
@@ -68,20 +87,25 @@ export async function POST(request: Request) {
   }
 
   // Validate mimetype
-  if (!ALLOWED_MIMETYPES.includes(file.type as (typeof ALLOWED_MIMETYPES)[number])) {
+  if (!ALL_ALLOWED_MIMETYPES.includes(file.type as (typeof ALL_ALLOWED_MIMETYPES)[number])) {
     return NextResponse.json(
       {
-        error: `Unsupported file type: ${file.type}. Allowed types: ${ALLOWED_MIMETYPES.join(", ")}`,
+        error: `Unsupported file type: ${file.type}. Allowed types: ${ALL_ALLOWED_MIMETYPES.join(", ")}`,
       },
       { status: 400 },
     );
   }
 
+  // Determine size limit based on file type
+  const isImage = (IMAGE_MIMETYPES as readonly string[]).includes(file.type);
+  const sizeLimit = isImage ? MAX_IMAGE_SIZE : MAX_FILE_SIZE;
+  const sizeLabel = isImage ? "10 MB" : "25 MB";
+
   // Validate file size
-  if (file.size > MAX_FILE_SIZE) {
+  if (file.size > sizeLimit) {
     return NextResponse.json(
       {
-        error: `File too large: ${(file.size / 1024 / 1024).toFixed(1)} MB. Maximum allowed: 10 MB.`,
+        error: `File too large: ${(file.size / 1024 / 1024).toFixed(1)} MB. Maximum allowed: ${sizeLabel}.`,
       },
       { status: 400 },
     );

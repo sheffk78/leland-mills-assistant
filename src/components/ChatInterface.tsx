@@ -77,12 +77,11 @@ export function ChatInterface({
 
     for (const file of Array.from(files)) {
       // Basic client-side validation
-      if (!file.type.startsWith("image/")) {
-        setError(`File "${file.name}" is not an image. Only images are allowed.`);
-        continue;
-      }
-      if (file.size > 10 * 1024 * 1024) {
-        setError(`File "${file.name}" is too large. Maximum size is 10 MB.`);
+      const isImage = file.type.startsWith("image/");
+      const maxSize = isImage ? 10 * 1024 * 1024 : 25 * 1024 * 1024;
+      const maxLabel = isImage ? "10 MB" : "25 MB";
+      if (file.size > maxSize) {
+        setError(`File "${file.name}" is too large. Maximum size is ${maxLabel}.`);
         continue;
       }
 
@@ -346,25 +345,37 @@ export function ChatInterface({
       {pendingAttachments.length > 0 && (
         <div className="px-4 py-2 border-t border-border bg-surface">
           <div className="max-w-3xl mx-auto flex flex-wrap gap-2">
-            {pendingAttachments.map((att) => (
-              <div key={att.id} className="relative group">
-                <img
-                  src={att.url}
-                  alt={att.filename}
-                  className="w-16 h-16 object-cover rounded-lg border border-border"
-                />
-                <button
-                  onClick={() => removeAttachment(att.id)}
-                  className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-zinc-800 text-white text-xs flex items-center justify-center hover:bg-red-600 transition-colors"
-                  aria-label="Remove attachment"
-                >
-                  x
-                </button>
-                <span className="block text-[10px] text-zinc-500 truncate w-16 mt-0.5">
-                  {att.filename}
-                </span>
-              </div>
-            ))}
+            {pendingAttachments.map((att) => {
+              const isImage = att.mimetype.startsWith("image/");
+              return (
+                <div key={att.id} className="relative group">
+                  {isImage ? (
+                    <img
+                      src={att.url}
+                      alt={att.filename}
+                      className="w-16 h-16 object-cover rounded-lg border border-border"
+                    />
+                  ) : (
+                    <div className="w-16 h-16 rounded-lg border border-border bg-surface flex flex-col items-center justify-center p-1">
+                      <span className="text-xl">📄</span>
+                      <span className="text-[8px] text-zinc-500 truncate w-full text-center leading-tight">
+                        {att.filename.split(".").pop()?.toUpperCase()}
+                      </span>
+                    </div>
+                  )}
+                  <button
+                    onClick={() => removeAttachment(att.id)}
+                    className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-zinc-800 text-white text-xs flex items-center justify-center hover:bg-red-600 transition-colors"
+                    aria-label="Remove attachment"
+                  >
+                    x
+                  </button>
+                  <span className="block text-[10px] text-zinc-500 truncate w-16 mt-0.5">
+                    {att.filename}
+                  </span>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
@@ -379,7 +390,7 @@ export function ChatInterface({
           <input
             ref={fileInputRef}
             type="file"
-            accept="image/jpeg,image/png,image/webp,image/gif"
+            accept="image/jpeg,image/png,image/webp,image/gif,.pdf,.csv,.xlsx,.docx,.txt,.json"
             multiple
             onChange={handleFileSelect}
             className="hidden"
@@ -391,8 +402,8 @@ export function ChatInterface({
             onClick={() => fileInputRef.current?.click()}
             disabled={isLoading}
             className="shrink-0 rounded-xl p-2.5 text-foreground border border-border bg-surface hover:border-[var(--color-accent)] hover:text-[var(--color-accent)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            aria-label="Attach image"
-            title="Attach image"
+            aria-label="Attach file"
+            title="Attach file"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"

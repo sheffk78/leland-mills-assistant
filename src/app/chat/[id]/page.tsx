@@ -23,6 +23,13 @@ interface ConversationData {
     role: "USER" | "ASSISTANT" | "SYSTEM";
     content: string;
     createdAt: string;
+    attachments?: Array<{
+      id: string;
+      filename: string;
+      filepath: string;
+      mimetype: string;
+      filesize: number;
+    }>;
   }>;
 }
 
@@ -65,6 +72,13 @@ export default function ConversationPage({
               role: m.role,
               content: m.content,
               createdAt: m.createdAt,
+              attachments: m.attachments?.map((a) => ({
+                id: a.id,
+                filename: a.filename,
+                url: `/uploads/${a.filepath.split("/").pop()}`,
+                mimetype: a.mimetype,
+                filesize: a.filesize,
+              })),
             })),
           );
         } else if (!cancelled) {
