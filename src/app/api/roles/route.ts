@@ -14,7 +14,7 @@ import { prisma } from "@/lib/db";
  * The bridge listens on localhost:8080.
  */
 const BRIDGE_URL = process.env.BRIDGE_URL ?? "http://localhost:8080";
-const BRIDGE_API_KEY = process.env.BRIDGE_API_KEY ?? "REMOVED";
+const BRIDGE_API_KEY = process.env.BRIDGE_API_KEY ?? "";
 
 /**
  * Generate a URL-safe slug key from a display name.
