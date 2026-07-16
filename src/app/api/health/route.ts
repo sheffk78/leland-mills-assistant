@@ -44,8 +44,7 @@ export async function GET() {
     bridgeStatus = "unreachable";
   }
 
-  // Always return 200 so monitoring tools get a response body.
-  // The `status` field and db/bridge fields tell the real story.
+  // Return 503 when degraded so HTTP-code monitors detect it
   const allHealthy = dbStatus === "connected" && bridgeStatus === "reachable";
 
   return NextResponse.json(
@@ -56,6 +55,6 @@ export async function GET() {
       db: dbStatus,
       bridge: bridgeStatus,
     },
-    { status: 200 },
+    { status: allHealthy ? 200 : 503 },
   );
 }
