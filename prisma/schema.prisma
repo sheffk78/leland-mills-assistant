@@ -284,3 +284,22 @@ model AgentProfile {
   @@index([roleKey])
   @@map("agent_profiles")
 }
+
+// ---------------------------------------------------------------------------
+// Cron jobs — scheduled tasks managed through the chat interface
+// ---------------------------------------------------------------------------
+
+model CronJob {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String
+  prompt      String
+  schedule    String
+  skills      String[] @default([])
+  isActive    Boolean  @default(true)
+  lastRunAt   DateTime?
+  lastResult  String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("cron_jobs")
+}
