@@ -9,7 +9,14 @@
  */
 
 const BRIDGE_URL = process.env.BRIDGE_URL || "http://localhost:8080";
-const BRIDGE_API_KEY = process.env.BRIDGE_API_KEY || "REMOVED";
+
+function getBridgeApiKey(): string {
+  const key = process.env.BRIDGE_API_KEY;
+  if (!key) {
+    throw new Error("BRIDGE_API_KEY environment variable is required");
+  }
+  return key;
+}
 
 export interface BridgeResponse {
   [key: string]: unknown;
@@ -27,7 +34,7 @@ export async function bridgeFetch<T = BridgeResponse>(
     ...options,
     headers: {
       "Content-Type": "application/json",
-      "X-API-Key": BRIDGE_API_KEY,
+      "X-API-Key": getBridgeApiKey(),
       ...options.headers,
     },
     // Generous timeout — cron list / config writes can be slow on the VPS.

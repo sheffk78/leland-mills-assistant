@@ -2,6 +2,7 @@ import NextAuth, { type NextAuthConfig } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/db";
+import { checkRateLimit, recordFailedAttempt, resetAttempts, getClientIp } from "@/lib/pin-rate-limiter";
 
 /**
  * NextAuth v5 configuration for the Leland Mills AI Assistant.
@@ -48,24 +49,37 @@ export const authConfig: NextAuthConfig = {
         password: { label: "Password", type: "password" },
         pinCode: { label: "PIN Code", type: "text" },
       },
-      async authorize(credentials) {
+      async authorize(credentials, request) {
         // Flow 1: PIN code login (for drivers)
         if (credentials?.pinCode && !credentials?.email) {
           const pin = String(credentials.pinCode);
 
+          // Rate limit: max 5 failed PIN attempts per IP per 15 minutes
+          const ip = request ? getClientIp(request) : "unknown";
+          const { locked, minutesRemaining } = checkRateLimit(ip);
+          if (locked) {
+            throw new Error(
+              `Too many failed attempts. Try again in ${minutesRemaining} minute${minutesRemaining === 1 ? "" : "s"}.`,
+            );
+          }
+
           // Look up a user by their PIN code
-          // TODO: For production, add rate limiting on PIN attempts
           const users = await prisma.user.findMany();
 
+          let authenticated = false;
           for (const user of users) {
             if (
               user.pinCode &&
               (await bcrypt.compare(pin, user.pinCode))
             ) {
+              authenticated = true;
               await prisma.user.update({
                 where: { id: user.id },
                 data: { lastLogin: new Date() },
               });
+
+              // Reset rate limiter on successful login
+              resetAttempts(ip);
 
               const roleKey = user.role.toLowerCase();
               const { name: roleName, isAdmin } = await getRoleDetails(roleKey);
@@ -80,6 +94,9 @@ export const authConfig: NextAuthConfig = {
               };
             }
           }
+
+          // Record failed attempt
+          recordFailedAttempt(ip);
           return null;
         }
 

@@ -83,7 +83,13 @@ export default function AdminSkillsPage() {
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
-  const [actionError, setActionError] = useState<string | null>(null);
+
+  // Per-feature error states (avoids stale errors leaking across features)
+  const [toggleError, setToggleError] = useState<string | null>(null);
+  const [assignmentError, setAssignmentError] = useState<string | null>(null);
+  const [versionError, setVersionError] = useState<string | null>(null);
+  const [rollbackError, setRollbackError] = useState<string | null>(null);
+  const [addError, setAddError] = useState<string | null>(null);
 
   // Sandbox state
   const [sandboxSkillId, setSandboxSkillId] = useState<string | null>(null);
@@ -98,7 +104,7 @@ export default function AdminSkillsPage() {
   const [viewVersionContent, setViewVersionContent] = useState<{ skillId: string; version: SkillVersionDetail } | null>(null);
   const [rollbackConfirm, setRollbackConfirm] = useState<{ skillId: string; version: number } | null>(null);
   const [rollbackLoading, setRollbackLoading] = useState<string | null>(null);
-  const [rollbackSuccess, setRollbackSuccess] = useState<string | null>(null);
+  const [rollbackSuccess, setRollbackSuccess] = useState<{ message: string; skillId: string } | null>(null);
 
   // Add form state
   const [formName, setFormName] = useState("");
@@ -169,6 +175,7 @@ export default function AdminSkillsPage() {
 
   // Toggle skill active/inactive
   const toggleActive = async (skill: Skill) => {
+    setToggleError(null);
     try {
       const res = await fetch(`/api/skills/${skill.id}`, {
         method: "PUT",
@@ -180,7 +187,7 @@ export default function AdminSkillsPage() {
         prev.map((s) => (s.id === skill.id ? { ...s, isActive: !s.isActive } : s)),
       );
     } catch (err) {
-      setActionError(err instanceof Error ? err.message : "Toggle failed");
+      setToggleError(err instanceof Error ? err.message : "Toggle failed");
     }
   };
 
@@ -191,6 +198,7 @@ export default function AdminSkillsPage() {
     );
     const isEnabled = current?.isEnabled ?? false;
 
+    setAssignmentError(null);
     try {
       if (isEnabled) {
         const res = await fetch(`/api/skills/${skill.id}/assign`, {
@@ -223,7 +231,7 @@ export default function AdminSkillsPage() {
         }),
       );
     } catch (err) {
-      setActionError(err instanceof Error ? err.message : "Assignment failed");
+      setAssignmentError(err instanceof Error ? err.message : "Assignment failed");
     }
   };
 
@@ -234,6 +242,12 @@ export default function AdminSkillsPage() {
     setSandboxMessages([]);
     setSandboxInput("");
     setSandboxError(null);
+    // Clear stale errors from other features when entering sandbox
+    setToggleError(null);
+    setAssignmentError(null);
+    setVersionError(null);
+    setRollbackError(null);
+    setRollbackSuccess(null);
   };
 
   const closeSandbox = () => {
@@ -295,13 +309,14 @@ export default function AdminSkillsPage() {
 
   const fetchVersionHistory = async (skillId: string) => {
     setVersionLoading(skillId);
+    setVersionError(null);
     try {
       const res = await fetch(`/api/skills/${skillId}/version`, { cache: "no-store" });
       if (!res.ok) throw new Error("Failed to load versions");
       const data = await res.json();
       setVersionHistory((prev) => ({ ...prev, [skillId]: data.versions ?? [] }));
     } catch (err) {
-      setActionError(err instanceof Error ? err.message : "Failed to load versions");
+      setVersionError(err instanceof Error ? err.message : "Failed to load versions");
     } finally {
       setVersionLoading(null);
     }
@@ -310,6 +325,7 @@ export default function AdminSkillsPage() {
   const handleRollback = async (skillId: string, version: number) => {
     setRollbackLoading(skillId);
     setRollbackSuccess(null);
+    setRollbackError(null);
     try {
       const res = await fetch(`/api/skills/${skillId}/version`, {
         method: "POST",
@@ -325,10 +341,13 @@ export default function AdminSkillsPage() {
       await fetchData();
       // Refresh version history for this skill
       await fetchVersionHistory(skillId);
-      setRollbackSuccess(`Successfully rolled back to version ${version}. A new version ${data.newVersion} was created.`);
+      setRollbackSuccess({
+        message: `Successfully rolled back to version ${version}. A new version ${data.newVersion} was created.`,
+        skillId,
+      });
       setRollbackConfirm(null);
     } catch (err) {
-      setActionError(err instanceof Error ? err.message : "Rollback failed");
+      setRollbackError(err instanceof Error ? err.message : "Rollback failed");
     } finally {
       setRollbackLoading(null);
     }
@@ -337,7 +356,7 @@ export default function AdminSkillsPage() {
   // Add skill form submit
   const handleAddSkill = async (e: React.FormEvent) => {
     e.preventDefault();
-    setActionError(null);
+    setAddError(null);
     setIsSaving(true);
     try {
       const key = formName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
@@ -367,7 +386,7 @@ export default function AdminSkillsPage() {
       setShowAddForm(false);
       fetchData();
     } catch (err) {
-      setActionError(err instanceof Error ? err.message : "Create failed");
+      setAddError(err instanceof Error ? err.message : "Create failed");
     } finally {
       setIsSaving(false);
     }
@@ -379,7 +398,7 @@ export default function AdminSkillsPage() {
     setFormCategory("Operations");
     setFormContent("");
     setFormRoles([]);
-    setActionError(null);
+    setAddError(null);
     setShowAddForm(false);
   };
 
@@ -509,9 +528,9 @@ export default function AdminSkillsPage() {
               </div>
             </div>
 
-            {actionError && (
+            {addError && (
               <div className="rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900 px-3 py-2">
-                <p className="text-sm text-red-600 dark:text-red-400">{actionError}</p>
+                <p className="text-sm text-red-600 dark:text-red-400">{addError}</p>
               </div>
             )}
 
@@ -583,10 +602,12 @@ export default function AdminSkillsPage() {
         </select>
       </div>
 
-      {/* Action error */}
-      {actionError && !showAddForm && (
+      {/* Per-feature error banners (shown outside the add form) */}
+      {(toggleError || assignmentError) && !showAddForm && (
         <div className="mb-4 rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900 px-4 py-3">
-          <p className="text-sm text-red-600 dark:text-red-400">{actionError}</p>
+          <p className="text-sm text-red-600 dark:text-red-400">
+            {toggleError ?? assignmentError}
+          </p>
         </div>
       )}
 
@@ -750,9 +771,21 @@ export default function AdminSkillsPage() {
                                 </button>
                               </div>
 
-                              {rollbackSuccess && rollbackConfirm === null && (
+                              {rollbackSuccess && rollbackSuccess.skillId === skill.id && rollbackConfirm === null && (
                                 <div className="mb-2 rounded-md bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-900 px-2 py-1.5">
-                                  <p className="text-xs text-green-600 dark:text-green-400">{rollbackSuccess}</p>
+                                  <p className="text-xs text-green-600 dark:text-green-400">{rollbackSuccess.message}</p>
+                                </div>
+                              )}
+
+                              {rollbackError && rollbackConfirm?.skillId === skill.id && (
+                                <div className="mb-2 rounded-md bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900 px-2 py-1.5">
+                                  <p className="text-xs text-red-600 dark:text-red-400">{rollbackError}</p>
+                                </div>
+                              )}
+
+                              {versionError && expandedId === skill.id && (
+                                <div className="mb-2 rounded-md bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900 px-2 py-1.5">
+                                  <p className="text-xs text-red-600 dark:text-red-400">{versionError}</p>
                                 </div>
                               )}
 

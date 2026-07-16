@@ -100,7 +100,7 @@ export async function PUT(
           skillId: id,
           version: newVersion,
           content: body.content ?? null,
-          createdBy: session.user.id,
+          createdBy: session.user.name ?? session.user.email ?? session.user.id,
         },
       });
     });

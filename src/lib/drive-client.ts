@@ -12,6 +12,7 @@
 
 import { google, type drive_v3 } from "googleapis";
 import { prisma } from "@/lib/db";
+import { decrypt } from "@/lib/crypto";
 
 export interface DriveSearchResult {
   id: string;
@@ -44,7 +45,10 @@ async function getStoredRefreshToken(): Promise<string | null> {
 
   try {
     const data = JSON.parse(settings.parentFolder);
-    return data.refreshToken ?? null;
+    const rawToken: string | undefined = data.refreshToken;
+    if (!rawToken) return null;
+    // Decrypt the token (no-op if stored as plaintext / ENCRYPTION_KEY not set)
+    return decrypt(rawToken);
   } catch {
     return null;
   }

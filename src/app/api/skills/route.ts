@@ -111,7 +111,7 @@ export async function POST(request: Request) {
         skillId: created.id,
         version: 1,
         content: content ?? null,
-        createdBy: session.user.id,
+        createdBy: session.user.name ?? session.user.email ?? session.user.id,
       },
     });
 

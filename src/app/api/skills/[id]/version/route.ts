@@ -103,7 +103,7 @@ export async function POST(
         skillId: id,
         version: newVersion,
         content: versionSnapshot.content,
-        createdBy: session.user.id,
+        createdBy: session.user.name ?? session.user.email ?? session.user.id,
       },
     });
   });

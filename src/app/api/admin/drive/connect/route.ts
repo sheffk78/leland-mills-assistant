@@ -15,6 +15,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { google } from "googleapis";
+import { encrypt } from "@/lib/crypto";
 
 const SCOPES = ["https://www.googleapis.com/auth/drive.readonly"];
 
@@ -102,41 +103,28 @@ export async function GET(request: Request) {
       );
     }
 
-    // Store the refresh token and access token in the database
-    // We use a simple key-value approach via the DriveFile model's settings
-    // In a production app, we'd have a dedicated settings table, but for
-    // this scope we store it in a simple config entry
+    // Store the refresh token encrypted at rest.
+    // The crypto.encrypt() helper uses ENCRYPTION_KEY (falls back to plaintext
+    // with a warning if not set, for backward compat).
+    const encryptedRefreshToken = encrypt(tokens.refresh_token);
+    const settingsData = JSON.stringify({
+      refreshToken: encryptedRefreshToken,
+      connectedBy: session.user.id,
+      connectedAt: new Date().toISOString(),
+    });
 
-    // Store encrypted refresh token in env or database
-    // For now, we store it in the database as a special "settings" row
-    // (In production, this should be encrypted at rest)
-
-    // Update or create a settings record
-    // We reuse the KnowledgeEntry table's tags field as a simple key-value store
-    // This is a pragmatic approach for a single-tenant app
-
-    // Actually, let's use a proper approach: store in the DriveFile table
-    // as a special row with id "settings:drive"
     await prisma.driveFile.upsert({
       where: { id: "settings:drive" },
       create: {
         id: "settings:drive",
         name: `Google Drive Settings (connected by ${session.user.name})`,
         mimeType: "application/json",
-        parentFolder: JSON.stringify({
-          refreshToken: tokens.refresh_token,
-          connectedBy: session.user.id,
-          connectedAt: new Date().toISOString(),
-        }),
+        parentFolder: settingsData,
       },
       update: {
         name: `Google Drive Settings (connected by ${session.user.name})`,
         mimeType: "application/json",
-        parentFolder: JSON.stringify({
-          refreshToken: tokens.refresh_token,
-          connectedBy: session.user.id,
-          connectedAt: new Date().toISOString(),
-        }),
+        parentFolder: settingsData,
         lastSyncedAt: new Date(),
       },
     });
