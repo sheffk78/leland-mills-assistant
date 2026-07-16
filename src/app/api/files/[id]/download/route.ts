@@ -33,12 +33,21 @@ export async function GET(
   // Look up the file attachment in the database
   const attachment = await prisma.fileAttachment.findUnique({
     where: { id },
+    include: { message: { select: { conversation: { select: { userId: true } } } } },
   });
 
   if (!attachment) {
     return NextResponse.json(
       { error: "File not found" },
       { status: 404 },
+    );
+  }
+
+  // Non-admin users can only download files from their own conversations
+  if (!session.user.isAdmin && attachment.message?.conversation?.userId !== session.user.id) {
+    return NextResponse.json(
+      { error: "You do not have access to this file" },
+      { status: 403 },
     );
   }
 

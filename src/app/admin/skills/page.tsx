@@ -257,7 +257,7 @@ export default function AdminSkillsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           message: userMsg.content,
-          history: newMessages.map((m) => ({ role: m.role, content: m.content })),
+          history: sandboxMessages.map((m) => ({ role: m.role, content: m.content })),
         }),
       });
       if (!res.ok) {
@@ -340,12 +340,14 @@ export default function AdminSkillsPage() {
     setActionError(null);
     setIsSaving(true);
     try {
+      const key = formName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
       const body = {
+        key,
         name: formName,
         description: formDescription || undefined,
         category: formCategory,
         content: formContent || undefined,
-        roleAssignments: formRoles,
+        roleKeys: formRoles,
       };
       const res = await fetch("/api/skills", {
         method: "POST",

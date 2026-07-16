@@ -258,6 +258,7 @@ model SkillVersion {
 
   skill Skill @relation(fields: [skillId], references: [id], onDelete: Cascade)
 
+  @@unique([skillId, version])
   @@index([skillId])
   @@map("skill_versions")
 }
