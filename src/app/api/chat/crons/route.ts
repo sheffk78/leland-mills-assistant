@@ -4,6 +4,11 @@
  * This route lets Archie (the Hermes agent) manage scheduled cron jobs
  * programmatically when Jake asks via chat. All actions require admin auth.
  *
+ * The route is the source of truth for the *database* (CronJob table) and also
+ * mirrors every mutation to the VPS Hermes instance through the bridge API
+ * (http://localhost:8080). Reads fall back to the database when the bridge is
+ * unreachable so the UI still works during bridge downtime.
+ *
  * Actions:
  *   { action: "list" }
  *   { action: "create", name, prompt, schedule, skills[] }
@@ -11,15 +16,19 @@
  *   { action: "resume", jobId }
  *   { action: "delete", jobId }
  *   { action: "update", jobId, name?, prompt?, schedule?, skills? }
- *
- * Cron job metadata is stored in the database (CronJob model). The actual
- * cron execution happens on the VPS via Hermes cron — this route manages
- * the metadata that gets synced to the VPS filesystem.
  */
 
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import {
+  bridgeFetch,
+  bridgeGet,
+  bridgePost,
+  bridgeDelete,
+  type BridgeCronListResponse,
+  type BridgeCronCreateResponse,
+} from "@/lib/bridge-client";
 
 async function requireAdmin() {
   const session = await auth();
@@ -71,14 +80,43 @@ export async function POST(request: Request) {
 // --- Action handlers ---
 
 async function handleList() {
-  const crons = await prisma.cronJob.findMany({
+  // Always read the DB first (local source of truth + works offline).
+  const dbCrons = await prisma.cronJob.findMany({
     orderBy: { createdAt: "desc" },
+  });
+
+  // Attempt to enrich with live state from the bridge. If the bridge is down,
+  // return the DB records alone so the UI still renders.
+  let bridgeError: string | undefined;
+  let bridgeCrons: BridgeCronListResponse["crons"] = [];
+  try {
+    const bridgeData = await bridgeGet<BridgeCronListResponse>("/api/crons");
+    bridgeCrons = bridgeData.crons ?? [];
+  } catch (err) {
+    bridgeError = err instanceof Error ? err.message : String(err);
+  }
+
+  // Merge: prefer the bridge's live isActive/lastRunAt/lastResult when we have
+  // a matching job by name (Hermes cron jobs are keyed by name on the VPS).
+  const bridgeByName = new Map(bridgeCrons.map((c) => [c.name, c]));
+  const crons = dbCrons.map((db) => {
+    const live = bridgeByName.get(db.name);
+    if (!live) return db;
+    return {
+      ...db,
+      isActive: live.isActive ?? db.isActive,
+      lastRunAt: live.lastRunAt ? new Date(live.lastRunAt) : db.lastRunAt,
+      lastResult: live.lastResult ?? db.lastResult,
+      bridgeId: live.id,
+    };
   });
 
   return NextResponse.json({
     success: true,
     action: "list",
     crons,
+    bridgeAvailable: !bridgeError,
+    bridgeError,
   });
 }
 
@@ -107,6 +145,23 @@ async function handleCreate(body: Record<string, unknown>) {
     );
   }
 
+  // 1. Create the real Hermes cron job on the VPS via the bridge.
+  let bridgeError: string | undefined;
+  let bridgeCronId: string | undefined;
+  try {
+    const bridgeData = await bridgePost<BridgeCronCreateResponse>("/api/crons", {
+      name,
+      prompt,
+      schedule,
+      skills,
+    });
+    bridgeCronId = bridgeData.cron?.id;
+  } catch (err) {
+    bridgeError = err instanceof Error ? err.message : String(err);
+    // Surface the error but still persist locally so the operator can retry.
+  }
+
+  // 2. Persist metadata to the DB for local tracking.
   const cron = await prisma.cronJob.create({
     data: {
       name,
@@ -122,6 +177,9 @@ async function handleCreate(body: Record<string, unknown>) {
       success: true,
       action: "create",
       cron,
+      bridgeCronId,
+      bridgeAvailable: !bridgeError,
+      bridgeError,
     },
     { status: 201 },
   );
@@ -138,6 +196,14 @@ async function handlePause(body: Record<string, unknown>) {
     return NextResponse.json({ error: "Cron job not found" }, { status: 404 });
   }
 
+  // Pause on the VPS first.
+  let bridgeError: string | undefined;
+  try {
+    await bridgePost(`/api/crons/${encodeURIComponent(jobId)}/pause`);
+  } catch (err) {
+    bridgeError = err instanceof Error ? err.message : String(err);
+  }
+
   const cron = await prisma.cronJob.update({
     where: { id: jobId },
     data: { isActive: false },
@@ -147,6 +213,8 @@ async function handlePause(body: Record<string, unknown>) {
     success: true,
     action: "pause",
     cron,
+    bridgeAvailable: !bridgeError,
+    bridgeError,
   });
 }
 
@@ -161,6 +229,14 @@ async function handleResume(body: Record<string, unknown>) {
     return NextResponse.json({ error: "Cron job not found" }, { status: 404 });
   }
 
+  // Resume on the VPS first.
+  let bridgeError: string | undefined;
+  try {
+    await bridgePost(`/api/crons/${encodeURIComponent(jobId)}/resume`);
+  } catch (err) {
+    bridgeError = err instanceof Error ? err.message : String(err);
+  }
+
   const cron = await prisma.cronJob.update({
     where: { id: jobId },
     data: { isActive: true },
@@ -170,6 +246,8 @@ async function handleResume(body: Record<string, unknown>) {
     success: true,
     action: "resume",
     cron,
+    bridgeAvailable: !bridgeError,
+    bridgeError,
   });
 }
 
@@ -184,12 +262,22 @@ async function handleDelete(body: Record<string, unknown>) {
     return NextResponse.json({ error: "Cron job not found" }, { status: 404 });
   }
 
+  // Delete on the VPS first.
+  let bridgeError: string | undefined;
+  try {
+    await bridgeDelete(`/api/crons/${encodeURIComponent(jobId)}`);
+  } catch (err) {
+    bridgeError = err instanceof Error ? err.message : String(err);
+  }
+
   await prisma.cronJob.delete({ where: { id: jobId } });
 
   return NextResponse.json({
     success: true,
     action: "delete",
     jobId,
+    bridgeAvailable: !bridgeError,
+    bridgeError,
   });
 }
 
@@ -227,6 +315,14 @@ async function handleUpdate(body: Record<string, unknown>) {
   const skills = body.skills as string[] | undefined;
   if (skills !== undefined) updateData.skills = skills;
 
+  // Mirror the update to the bridge (PUT /api/crons/:id).
+  let bridgeError: string | undefined;
+  try {
+    await bridgeFetchBridgeUpdate(jobId, updateData);
+  } catch (err) {
+    bridgeError = err instanceof Error ? err.message : String(err);
+  }
+
   const cron = await prisma.cronJob.update({
     where: { id: jobId },
     data: updateData,
@@ -236,5 +332,14 @@ async function handleUpdate(body: Record<string, unknown>) {
     success: true,
     action: "update",
     cron,
+    bridgeAvailable: !bridgeError,
+    bridgeError,
+  });
+}
+
+async function bridgeFetchBridgeUpdate(jobId: string, updateData: Record<string, unknown>) {
+  await bridgeFetch(`/api/crons/${encodeURIComponent(jobId)}`, {
+    method: "PUT",
+    body: JSON.stringify(updateData),
   });
 }

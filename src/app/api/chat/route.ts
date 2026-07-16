@@ -116,7 +116,7 @@ async function buildPermissionsContext(
       `- Suggest regular security reviews: check for unused permissions, verify role assignments, review agent access.`,
       ``,
       `## ROLE CREATION`,
-      `- Create a new role: Create the role via /api/roles, then set up permissions via the permission tools (POST /api/chat/permissions action "set_role"), then suggest creating a Hermes profile for the new role.`,
+      `- Create a new role: When Jake asks to create a new role, call POST /api/roles with the role name, key, description, and systemPrompt. The role creation now automatically: (1) creates the role in the DB, (2) creates a Hermes profile on the VPS for that role via the bridge, and (3) creates an AgentProfile record in the DB. After the role is created, set up permissions via the permission tools (POST /api/chat/permissions action "set_role"). If the response includes a "warning" field, the Hermes profile wasn't created — let Jake know they may need to create it manually.`,
       ``,
       `Always confirm what you did after making changes. Be specific: "I've added the Fuel Log Lookup skill and enabled it for drivers and managers."`,
       ``,
