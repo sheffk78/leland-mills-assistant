@@ -20,11 +20,21 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { sendChatMessage } from "@/lib/hermes-client";
 import { checkRateLimit, logUsage } from "@/lib/rate-limiter";
+import { getUserPermissions } from "@/lib/permissions";
 
 /**
  * Generic fallback system prompt when a role has no custom systemPrompt in the DB.
  */
 const GENERIC_PROMPT = `[Context: You are Archie, the AI assistant for Leland Mills. Help the user with their questions about company operations, tools, and resources.]`;
+
+/**
+ * All known permission keys in the system. Used to compute the "cannot" set
+ * (all known permissions minus what the user is allowed to do).
+ */
+async function getAllPermissionKeys(): Promise<Set<string>> {
+  const perms = await prisma.permission.findMany({ select: { key: true } });
+  return new Set(perms.map((p) => p.key));
+}
 
 /**
  * Build a role-based system prompt for the Hermes agent.
@@ -42,6 +52,61 @@ async function getRolePrompt(roleKey: string, userName: string): Promise<string>
   }
 
   return GENERIC_PROMPT;
+}
+
+/**
+ * Build a permissions context block for the system prompt.
+ *
+ * For admins: states they have full permissions and can manage the system.
+ * For everyone else: lists what they can and cannot do, and adds guidance
+ * on how to handle permission-denied situations and cross-agent handoff.
+ */
+async function buildPermissionsContext(
+  userId: string,
+  isAdmin: boolean,
+  roleKey: string,
+  roleName: string,
+): Promise<string> {
+  if (isAdmin) {
+    return [
+      `PERMISSIONS: You are an admin user (${roleName}, key: ${roleKey}) with full permissions. You can manage roles, permissions, skills, and agents.`,
+      ``,
+      `MANAGEMENT INSTRUCTIONS: You are Archie, the Leland Mills assistant. The admin user (Jake) can manage the system through you. When Jake asks you to:`,
+      `- Add a new skill: Use the skill management tools (POST /api/chat/skills with action "create"). Create a skill with a clear name, description, category, and SKILL.md content. Assign it to the appropriate roles via roleKeys.`,
+      `- Update a skill: Use POST /api/chat/skills with action "update", passing the skillId and new content. A new version is created automatically.`,
+      `- Assign/unassign a skill to a role: Use POST /api/chat/skills with action "assign" or "unassign", passing skillId and roleKey.`,
+      `- Enable/disable a skill: Use POST /api/chat/skills with action "toggle", passing skillId and isActive (boolean).`,
+      `- List skills: Use POST /api/chat/skills with action "list" to see all skills and their role assignments.`,
+      `- Change permissions: Use the permission management tools (POST /api/chat/permissions). When Jake says "let managers write to employee files but not see pay rates", assign employee_files:write with effect "allow" and pay_rates:read with effect "deny" to the manager role.`,
+      `- List permissions: Use POST /api/chat/permissions with action "list" to see all permissions and role assignments.`,
+      `- Set all permissions for a role: Use POST /api/chat/permissions with action "set_role", passing roleKey and the full permissions array.`,
+      `- Remove a permission from a role: Use POST /api/chat/permissions with action "remove", passing roleKey and permissionKey.`,
+      `- Check agent status: Use the agent management tools (POST /api/chat/agents). List agents with action "list", update an agent with action "update", or run a health check with action "health".`,
+      `- Create a new role: Create the role via /api/roles, then set up permissions via the permission tools (POST /api/chat/permissions action "set_role"), then suggest creating a Hermes profile for the new role.`,
+      ``,
+      `Always confirm what you did after making changes. Be specific: "I've added the Fuel Log Lookup skill and enabled it for drivers and managers."`,
+      ``,
+      `CROSS-AGENT AWARENESS: You can check what other agents know. If a question is better suited for another role's agent, suggest: "This might be better answered by the [role] agent. Would you like me to check?" and if confirmed, note it for follow-up.`,
+    ].join("\n");
+  }
+
+  // Non-admin: resolve effective permissions and compute the "cannot" set
+  const allowed = await getUserPermissions(userId);
+  const allKeys = await getAllPermissionKeys();
+  const denied = [...allKeys].filter((k) => !allowed.has(k));
+
+  const allowedStr = allowed.size > 0 ? [...allowed].sort().join(", ") : "(none)";
+  const deniedStr = denied.length > 0 ? denied.sort().join(", ") : "(none)";
+
+  return [
+    `PERMISSIONS: The user's role is ${roleName} (key: ${roleKey}).`,
+    `You can: ${allowedStr}.`,
+    `You cannot: ${deniedStr}.`,
+    ``,
+    `If the user asks to do something they don't have permission for, politely explain what permissions they need and suggest they ask an admin.`,
+    ``,
+    `CROSS-AGENT HANDOFF: If a user asks something outside their role's scope, don't just say no. Suggest checking with the admin: "That's outside my scope for ${roleName}. Would you like me to check with the admin team on that?" If they confirm, note that the admin will follow up.`,
+  ].join("\n");
 }
 
 export async function POST(request: Request) {
@@ -174,9 +239,18 @@ export async function POST(request: Request) {
       session.user.name ?? "User",
     );
 
-    // Prepend role context to the user's message so the Hermes agent
-    // knows what tools and information are appropriate for this user
-    const contextualizedMessage = `${roleContext}\n\nUser question: ${message}`;
+    // Build permissions context (admin: management instructions; non-admin:
+    // permission list + cross-agent handoff guidance)
+    const permissionsContext = await buildPermissionsContext(
+      session.user.id,
+      session.user.isAdmin ?? false,
+      session.user.role ?? "staff",
+      session.user.roleName ?? "Staff",
+    );
+
+    // Prepend role context + permissions context to the user's message so
+    // the Hermes agent knows what tools and information are appropriate
+    const contextualizedMessage = `${roleContext}\n\n${permissionsContext}\n\nUser question: ${message}`;
 
     const result = await sendChatMessage({
       message: contextualizedMessage,
