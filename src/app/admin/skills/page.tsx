@@ -26,6 +26,8 @@ interface Skill {
   version: number;
   roleAssignments: { roleKey: string; isEnabled: boolean }[];
   lastUpdated?: string;
+  content?: string | null;
+  versions?: SkillVersionMeta[];
 }
 
 interface Role {
@@ -33,6 +35,22 @@ interface Role {
   key: string;
   name: string;
   isSystem: boolean;
+}
+
+interface SkillVersionMeta {
+  id: string;
+  version: number;
+  createdBy: string;
+  createdAt: string;
+}
+
+interface SkillVersionDetail extends SkillVersionMeta {
+  content: string | null;
+}
+
+interface SandboxMessage {
+  role: "user" | "assistant";
+  content: string;
 }
 
 const CATEGORY_ORDER = [
@@ -66,6 +84,21 @@ export default function AdminSkillsPage() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+
+  // Sandbox state
+  const [sandboxSkillId, setSandboxSkillId] = useState<string | null>(null);
+  const [sandboxMessages, setSandboxMessages] = useState<SandboxMessage[]>([]);
+  const [sandboxInput, setSandboxInput] = useState("");
+  const [sandboxLoading, setSandboxLoading] = useState(false);
+  const [sandboxError, setSandboxError] = useState<string | null>(null);
+
+  // Version history state
+  const [versionHistory, setVersionHistory] = useState<Record<string, SkillVersionDetail[]>>({});
+  const [versionLoading, setVersionLoading] = useState<string | null>(null);
+  const [viewVersionContent, setViewVersionContent] = useState<{ skillId: string; version: SkillVersionDetail } | null>(null);
+  const [rollbackConfirm, setRollbackConfirm] = useState<{ skillId: string; version: number } | null>(null);
+  const [rollbackLoading, setRollbackLoading] = useState<string | null>(null);
+  const [rollbackSuccess, setRollbackSuccess] = useState<string | null>(null);
 
   // Add form state
   const [formName, setFormName] = useState("");
@@ -191,6 +224,113 @@ export default function AdminSkillsPage() {
       );
     } catch (err) {
       setActionError(err instanceof Error ? err.message : "Assignment failed");
+    }
+  };
+
+  // --- Sandbox handlers ---
+
+  const openSandbox = (skill: Skill) => {
+    setSandboxSkillId(skill.id);
+    setSandboxMessages([]);
+    setSandboxInput("");
+    setSandboxError(null);
+  };
+
+  const closeSandbox = () => {
+    setSandboxSkillId(null);
+    setSandboxMessages([]);
+    setSandboxInput("");
+    setSandboxError(null);
+  };
+
+  const sendSandboxMessage = async (skill: Skill) => {
+    if (!sandboxInput.trim() || sandboxLoading) return;
+    const userMsg: SandboxMessage = { role: "user", content: sandboxInput.trim() };
+    const newMessages = [...sandboxMessages, userMsg];
+    setSandboxMessages(newMessages);
+    setSandboxInput("");
+    setSandboxLoading(true);
+    setSandboxError(null);
+    try {
+      const res = await fetch(`/api/skills/${skill.id}/test`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: userMsg.content,
+          history: newMessages.map((m) => ({ role: m.role, content: m.content })),
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({ error: "Test failed" }));
+        throw new Error(data.error || "Test failed");
+      }
+      const data = await res.json();
+      const assistantMsg: SandboxMessage = { role: "assistant", content: data.response ?? "(empty response)" };
+      setSandboxMessages((prev) => [...prev, assistantMsg]);
+    } catch (err) {
+      setSandboxError(err instanceof Error ? err.message : "Test failed");
+    } finally {
+      setSandboxLoading(false);
+    }
+  };
+
+  const goLive = async (skill: Skill) => {
+    try {
+      const res = await fetch(`/api/skills/${skill.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isActive: true }),
+      });
+      if (!res.ok) throw new Error("Failed to enable skill");
+      setSkills((prev) =>
+        prev.map((s) => (s.id === skill.id ? { ...s, isActive: true } : s)),
+      );
+      closeSandbox();
+    } catch (err) {
+      setSandboxError(err instanceof Error ? err.message : "Failed to go live");
+    }
+  };
+
+  // --- Version history handlers ---
+
+  const fetchVersionHistory = async (skillId: string) => {
+    setVersionLoading(skillId);
+    try {
+      const res = await fetch(`/api/skills/${skillId}/version`, { cache: "no-store" });
+      if (!res.ok) throw new Error("Failed to load versions");
+      const data = await res.json();
+      setVersionHistory((prev) => ({ ...prev, [skillId]: data.versions ?? [] }));
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : "Failed to load versions");
+    } finally {
+      setVersionLoading(null);
+    }
+  };
+
+  const handleRollback = async (skillId: string, version: number) => {
+    setRollbackLoading(skillId);
+    setRollbackSuccess(null);
+    try {
+      const res = await fetch(`/api/skills/${skillId}/version`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ version }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({ error: "Rollback failed" }));
+        throw new Error(data.error || "Rollback failed");
+      }
+      const data = await res.json();
+      // Refresh skills list
+      await fetchData();
+      // Refresh version history for this skill
+      await fetchVersionHistory(skillId);
+      setRollbackSuccess(`Successfully rolled back to version ${version}. A new version ${data.newVersion} was created.`);
+      setRollbackConfirm(null);
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : "Rollback failed");
+    } finally {
+      setRollbackLoading(null);
     }
   };
 
@@ -533,6 +673,14 @@ export default function AdminSkillsPage() {
                           )}
                         </div>
 
+                        {/* Test button */}
+                        <button
+                          onClick={() => openSandbox(skill)}
+                          className="mt-3 w-full rounded-lg px-3 py-1.5 text-xs font-medium border border-border text-foreground transition-colors hover:bg-black/5 dark:hover:bg-white/5"
+                        >
+                          🧪 Test Skill
+                        </button>
+
                         {/* Expanded details */}
                         {isExpanded && (
                           <div className="mt-3 pt-3 border-t border-border space-y-2">
@@ -585,6 +733,98 @@ export default function AdminSkillsPage() {
                                   </span>
                                 );
                               })}
+                            </div>
+
+                            {/* Version History Section */}
+                            <div className="mt-4 pt-3 border-t border-border">
+                              <div className="flex items-center justify-between mb-2">
+                                <h5 className="text-xs font-semibold text-foreground">Version History</h5>
+                                <button
+                                  onClick={() => fetchVersionHistory(skill.id)}
+                                  disabled={versionLoading === skill.id}
+                                  className="text-xs text-[var(--color-accent)] hover:opacity-80 disabled:opacity-50"
+                                >
+                                  {versionLoading === skill.id ? "Loading..." : "Load versions"}
+                                </button>
+                              </div>
+
+                              {rollbackSuccess && rollbackConfirm === null && (
+                                <div className="mb-2 rounded-md bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-900 px-2 py-1.5">
+                                  <p className="text-xs text-green-600 dark:text-green-400">{rollbackSuccess}</p>
+                                </div>
+                              )}
+
+                              {versionHistory[skill.id] && versionHistory[skill.id].length > 0 ? (
+                                <div className="space-y-1.5 max-h-64 overflow-y-auto">
+                                  {versionHistory[skill.id].map((v) => {
+                                    const isCurrent = v.version === skill.version;
+                                    return (
+                                      <div
+                                        key={v.id}
+                                        className={`flex items-center justify-between rounded-md border px-2.5 py-1.5 text-xs ${
+                                          isCurrent
+                                            ? "border-[var(--color-accent)] bg-[rgba(0,180,166,0.08)]"
+                                            : "border-border bg-surface"
+                                        }`}
+                                      >
+                                        <div className="flex flex-col">
+                                          <span className="font-medium text-foreground">
+                                            v{v.version}
+                                            {isCurrent && (
+                                              <span
+                                                className="ml-1.5 inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium text-white"
+                                                style={{ backgroundColor: "var(--color-accent)" }}
+                                              >
+                                                Current
+                                              </span>
+                                            )}
+                                          </span>
+                                          <span className="text-zinc-400 text-[11px]">
+                                            {new Date(v.createdAt).toLocaleString("en-US", {
+                                              month: "short",
+                                              day: "numeric",
+                                              year: "numeric",
+                                              hour: "numeric",
+                                              minute: "2-digit",
+                                            })}
+                                          </span>
+                                          <span className="text-zinc-400 text-[11px]">
+                                            by {v.createdBy}
+                                          </span>
+                                        </div>
+                                        <div className="flex items-center gap-1.5">
+                                          <button
+                                            onClick={() =>
+                                              setViewVersionContent({ skillId: skill.id, version: v })
+                                            }
+                                            className="rounded px-2 py-1 text-[11px] font-medium border border-border text-foreground hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+                                          >
+                                            View
+                                          </button>
+                                          {!isCurrent && (
+                                            <button
+                                              onClick={() =>
+                                                setRollbackConfirm({ skillId: skill.id, version: v.version })
+                                              }
+                                              disabled={rollbackLoading === skill.id}
+                                              className="rounded px-2 py-1 text-[11px] font-medium text-white transition-colors hover:opacity-80 disabled:opacity-50"
+                                              style={{ backgroundColor: "var(--color-accent)" }}
+                                            >
+                                              Rollback
+                                            </button>
+                                          )}
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              ) : (
+                                <p className="text-xs text-zinc-400">
+                                  {versionLoading === skill.id
+                                    ? "Loading versions..."
+                                    : "Click \"Load versions\" to see version history."}
+                                </p>
+                              )}
                             </div>
                           </div>
                         )}
@@ -674,6 +914,199 @@ export default function AdminSkillsPage() {
               </table>
             </div>
           )}
+        </div>
+      )}
+
+      {/* --- Sandbox Modal --- */}
+      {sandboxSkillId && (() => {
+        const skill = skills.find((s) => s.id === sandboxSkillId);
+        if (!skill) return null;
+        return (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+            onClick={closeSandbox}
+          >
+            <div
+              className="w-full max-w-2xl rounded-xl bg-white dark:bg-zinc-900 border border-border shadow-2xl flex flex-col max-h-[85vh]"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div className="flex items-start justify-between p-5 border-b border-border">
+                <div>
+                  <h3 className="text-base font-semibold text-foreground">
+                    🧪 Test Sandbox: {skill.name}
+                  </h3>
+                  <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
+                    {skill.description ?? "No description"}
+                  </p>
+                </div>
+                <button
+                  onClick={closeSandbox}
+                  className="rounded-lg p-1.5 text-zinc-400 hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>
+                </button>
+              </div>
+
+              {/* Chat messages */}
+              <div className="flex-1 overflow-y-auto p-5 space-y-3 min-h-[200px]">
+                {sandboxMessages.length === 0 && (
+                  <div className="text-center text-sm text-zinc-400 py-8">
+                    Type a message below to test this skill. The skill&apos;s SKILL.md content
+                    will be loaded as context.
+                  </div>
+                )}
+                {sandboxMessages.map((msg, i) => (
+                  <div
+                    key={i}
+                    className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+                  >
+                    <div
+                      className={`max-w-[80%] rounded-lg px-3.5 py-2.5 text-sm ${
+                        msg.role === "user"
+                          ? "bg-[var(--color-accent)] text-white"
+                          : "bg-zinc-100 dark:bg-zinc-800 text-foreground"
+                      }`}
+                    >
+                      <p className="whitespace-pre-wrap">{msg.content}</p>
+                    </div>
+                  </div>
+                ))}
+                {sandboxLoading && (
+                  <div className="flex justify-start">
+                    <div className="bg-zinc-100 dark:bg-zinc-800 rounded-lg px-3.5 py-2.5">
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-zinc-400 animate-bounce" style={{ animationDelay: "0ms" }} />
+                        <span className="w-2 h-2 rounded-full bg-zinc-400 animate-bounce" style={{ animationDelay: "150ms" }} />
+                        <span className="w-2 h-2 rounded-full bg-zinc-400 animate-bounce" style={{ animationDelay: "300ms" }} />
+                      </div>
+                    </div>
+                  </div>
+                )}
+                {sandboxError && (
+                  <div className="rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900 px-3 py-2">
+                    <p className="text-xs text-red-600 dark:text-red-400">{sandboxError}</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Input + actions */}
+              <div className="border-t border-border p-4 space-y-3">
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={sandboxInput}
+                    onChange={(e) => setSandboxInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault();
+                        sendSandboxMessage(skill);
+                      }
+                    }}
+                    placeholder="Type a test message..."
+                    disabled={sandboxLoading}
+                    className="flex-1 rounded-[4px] border border-zinc-300 bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:border-[var(--color-accent)] disabled:opacity-50"
+                  />
+                  <button
+                    onClick={() => sendSandboxMessage(skill)}
+                    disabled={sandboxLoading || !sandboxInput.trim()}
+                    className="rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors hover:opacity-90 disabled:opacity-50"
+                    style={{ backgroundColor: "var(--color-accent)" }}
+                  >
+                    Send
+                  </button>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => goLive(skill)}
+                    className="flex-1 rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors hover:opacity-90"
+                    style={{ backgroundColor: "var(--color-accent)" }}
+                  >
+                    ✅ Go Live
+                  </button>
+                  <button
+                    onClick={closeSandbox}
+                    className="flex-1 rounded-lg px-4 py-2 text-sm font-medium border border-border text-foreground hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+                  >
+                    Keep Disabled
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* --- Version Content Viewer Modal --- */}
+      {viewVersionContent && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          onClick={() => setViewVersionContent(null)}
+        >
+          <div
+            className="w-full max-w-2xl rounded-xl bg-white dark:bg-zinc-900 border border-border shadow-2xl flex flex-col max-h-[85vh]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between p-5 border-b border-border">
+              <h3 className="text-base font-semibold text-foreground">
+                Version {viewVersionContent.version.version} Content
+              </h3>
+              <button
+                onClick={() => setViewVersionContent(null)}
+                className="rounded-lg p-1.5 text-zinc-400 hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-5">
+              <pre className="text-xs font-mono text-foreground whitespace-pre-wrap break-words">
+                {viewVersionContent.version.content ?? "(no content)"}
+              </pre>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* --- Rollback Confirmation Modal --- */}
+      {rollbackConfirm && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          onClick={() => setRollbackConfirm(null)}
+        >
+          <div
+            className="w-full max-w-md rounded-xl bg-white dark:bg-zinc-900 border border-border shadow-2xl p-5"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-base font-semibold text-foreground mb-2">
+              Confirm Rollback
+            </h3>
+            <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-4">
+              Roll back to version {rollbackConfirm.version}? This will create a new
+              version with the content from version {rollbackConfirm.version}.
+            </p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => handleRollback(rollbackConfirm.skillId, rollbackConfirm.version)}
+                disabled={rollbackLoading === rollbackConfirm.skillId}
+                className="flex-1 rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors hover:opacity-90 disabled:opacity-50"
+                style={{ backgroundColor: "var(--color-accent)" }}
+              >
+                {rollbackLoading === rollbackConfirm.skillId ? "Rolling back..." : "Roll Back"}
+              </button>
+              <button
+                onClick={() => setRollbackConfirm(null)}
+                className="flex-1 rounded-lg px-4 py-2 text-sm font-medium border border-border text-foreground hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
