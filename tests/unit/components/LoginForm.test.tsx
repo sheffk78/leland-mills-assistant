@@ -132,14 +132,14 @@ describe("LoginForm", () => {
       target: { value: "admin@lelandmills.com" },
     });
     fireEvent.change(screen.getByPlaceholderText("••••••••"), {
-      target: { value: "changeme123" },
+      target: { value: "change-me" },
     });
     fireEvent.click(screen.getByText("Sign In"));
 
     await waitFor(() => {
       expect(mockSignIn).toHaveBeenCalledWith("credentials", expect.objectContaining({
         email: "admin@lelandmills.com",
-        password: "changeme123",
+        password: "change-me",
       }));
     });
   });

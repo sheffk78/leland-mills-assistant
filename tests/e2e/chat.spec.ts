@@ -12,7 +12,7 @@
 import { test, expect } from "@playwright/test";
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL ?? "admin@lelandmills.com";
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD ?? "changeme123";
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD ?? "change-me";
 
 async function login(page: import("@playwright/test").Page) {
   await page.goto("/login");
