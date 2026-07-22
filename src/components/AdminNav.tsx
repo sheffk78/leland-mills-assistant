@@ -131,7 +131,7 @@ export function AdminNav() {
               );
             })}
             <button
-              onClick={() => signOut({ callbackUrl: "/login" })}
+              onClick={() => { setMenuOpen(false); signOut({ callbackUrl: "/login" }); }}
               className="block w-full text-left px-4 py-3 text-sm text-zinc-600 dark:text-zinc-400 hover:bg-black/5 dark:hover:bg-white/5 transition-colors border-t border-border"
             >
               Log Out

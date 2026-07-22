@@ -215,7 +215,7 @@ export function Sidebar({
             Settings
           </button>
           <button
-            onClick={() => signOut({ callbackUrl: "/login" })}
+            onClick={() => { onClose?.(); signOut({ callbackUrl: "/login" }); }}
             className="w-full flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-zinc-600 dark:text-zinc-400 hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
           >
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">

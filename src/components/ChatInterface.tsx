@@ -69,10 +69,14 @@ export function ChatInterface({
       if (lastMsg && lastMsg.role === "USER") {
         pendingResponseRef.current = true;
         setIsLoading(true);
+      } else {
+        pendingResponseRef.current = false;
+        setIsLoading(false);
       }
-    } else if (!conversationId) {
+    } else {
       setMessages([]);
       pendingResponseRef.current = false;
+      setIsLoading(false);
     }
   }, [conversationId, initialMessages]);
 
@@ -100,6 +104,17 @@ export function ChatInterface({
         const res = await fetch(`/api/conversations/${conversationId}`, {
           cache: "no-store",
         });
+
+        // Conversation deleted or access denied — stop polling, show error
+        if (res.status === 404 || res.status === 403) {
+          if (!cancelled) {
+            pendingResponseRef.current = false;
+            setIsLoading(false);
+            setError("This conversation is no longer available.");
+          }
+          return;
+        }
+
         if (res.ok && !cancelled) {
           const data = await res.json();
           const allMessages = data.messages || [];
@@ -123,7 +138,14 @@ export function ChatInterface({
             }));
 
             if (!cancelled) {
-              setMessages(mapped);
+              // Only update if the DB has more messages than local state
+              // (prevents poll from clobbering an optimistic user message)
+              setMessages((prev) => {
+                if (allMessages.length > prev.length) {
+                  return mapped;
+                }
+                return prev;
+              });
               pendingResponseRef.current = false;
               setIsLoading(false);
             }
