@@ -17,15 +17,8 @@ export async function GET() {
     orderBy: [{ category: "asc" }, { name: "asc" }],
   });
 
-  // Group by category (null category → "Uncategorized")
-  const grouped: Record<string, typeof permissions> = {};
-  for (const p of permissions) {
-    const cat = p.category ?? "Uncategorized";
-    if (!grouped[cat]) grouped[cat] = [];
-    grouped[cat].push(p);
-  }
-
-  return NextResponse.json(grouped);
+  // Return flat array — the permissions page expects Permission[]
+  return NextResponse.json(permissions);
 }
 
 export async function POST(request: Request) {

@@ -37,10 +37,14 @@ export async function GET(
     select: { permissionKey: true, effect: true, createdAt: true },
   });
 
-  return NextResponse.json({
-    role: { key: role.key, name: role.name },
-    permissions: rolePermissions,
-  });
+  // Return flat array of { permissionKey, effect } — the permissions page
+  // expects this shape, not a wrapped object
+  return NextResponse.json(
+    rolePermissions.map((rp) => ({
+      permissionKey: rp.permissionKey,
+      effect: rp.effect,
+    })),
+  );
 }
 
 export async function PUT(
@@ -55,7 +59,10 @@ export async function PUT(
   const { roleKey } = await params;
   const lowerKey = roleKey.toLowerCase();
 
-  let body: { permissions?: Array<{ key: string; effect: string }> };
+  let body: {
+    assignments?: Array<{ permissionKey: string; effect: string }>;
+    permissions?: Array<{ key: string; effect: string }>;
+  };
 
   try {
     body = await request.json();
@@ -63,10 +70,13 @@ export async function PUT(
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const permissions = body.permissions;
+  // Support both "assignments" (from permissions page) and "permissions" (legacy)
+  const permissions = body.assignments
+    ? body.assignments.map((a) => ({ key: a.permissionKey, effect: a.effect }))
+    : body.permissions;
   if (!Array.isArray(permissions)) {
     return NextResponse.json(
-      { error: "permissions must be an array of { key, effect }" },
+      { error: "assignments or permissions must be an array" },
       { status: 400 },
     );
   }

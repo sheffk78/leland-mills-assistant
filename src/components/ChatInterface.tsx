@@ -55,15 +55,98 @@ export function ChatInterface({
   const currentConversationId = useRef<string | undefined>(conversationId);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Track whether we have an in-flight request (user message sent, no assistant reply yet)
+  const pendingResponseRef = useRef(false);
+
   // Update when conversationId prop changes (navigating to a different conversation)
   useEffect(() => {
     currentConversationId.current = conversationId;
     if (initialMessages) {
       setMessages(initialMessages);
+      // Check if the last message is from the user with no assistant response
+      // This means the request was in-flight when we navigated away
+      const lastMsg = initialMessages[initialMessages.length - 1];
+      if (lastMsg && lastMsg.role === "USER") {
+        pendingResponseRef.current = true;
+        setIsLoading(true);
+      }
     } else if (!conversationId) {
       setMessages([]);
+      pendingResponseRef.current = false;
     }
   }, [conversationId, initialMessages]);
+
+  // Poll for new messages if we have a pending response (in-flight request)
+  // This handles the case where Jake navigates away while Archie is processing,
+  // then comes back. The server stores the response in the DB, but the client
+  // needs to pick it up.
+  useEffect(() => {
+    if (!conversationId || !pendingResponseRef.current) return;
+
+    let cancelled = false;
+    let attempts = 0;
+    const maxAttempts = 60; // Poll for up to ~5 minutes (60 * 5s)
+
+    const poll = async () => {
+      if (cancelled || attempts >= maxAttempts) {
+        pendingResponseRef.current = false;
+        setIsLoading(false);
+        return;
+      }
+
+      attempts++;
+
+      try {
+        const res = await fetch(`/api/conversations/${conversationId}`, {
+          cache: "no-store",
+        });
+        if (res.ok && !cancelled) {
+          const data = await res.json();
+          const allMessages = data.messages || [];
+
+          // Check if there's now an assistant response after the last user message
+          const lastMsg = allMessages[allMessages.length - 1];
+          if (lastMsg && (lastMsg.role === "ASSISTANT" || lastMsg.role === "SYSTEM")) {
+            // Response has landed. Update messages and stop polling.
+            const mapped: ChatMessageData[] = allMessages.map((m: any) => ({
+              id: m.id,
+              role: m.role,
+              content: m.content,
+              createdAt: m.createdAt,
+              attachments: m.attachments?.map((a: any) => ({
+                id: a.id,
+                filename: a.filename,
+                url: `/uploads/${a.filepath.split("/").pop()}`,
+                mimetype: a.mimetype,
+                filesize: a.filesize,
+              })),
+            }));
+
+            if (!cancelled) {
+              setMessages(mapped);
+              pendingResponseRef.current = false;
+              setIsLoading(false);
+            }
+            return; // Stop polling
+          }
+        }
+      } catch {
+        // Network error, keep polling
+      }
+
+      if (!cancelled) {
+        setTimeout(poll, 5000);
+      }
+    };
+
+    // Start polling after a short delay
+    const timer = setTimeout(poll, 3000);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [conversationId]);
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
@@ -133,6 +216,9 @@ export function ChatInterface({
       const attachmentsToSend = [...pendingAttachments];
       setPendingAttachments([]);
 
+      // Mark that we have a pending response to pick up if navigation occurs
+      pendingResponseRef.current = true;
+
       // Add user message immediately (with attachments for inline display)
       const userMsg: ChatMessageData = {
         role: "USER",
@@ -184,10 +270,12 @@ export function ChatInterface({
           createdAt: data.createdAt,
         };
         setMessages((prev) => [...prev, assistantMsg]);
+        pendingResponseRef.current = false;
       } catch (err) {
         const msg =
           err instanceof Error ? err.message : "Something went wrong";
         setError(msg);
+        pendingResponseRef.current = false;
         // On rate limit (429), keep the user's message visible but show the error.
         // On other errors, remove the message so they can retry.
         if (!msg.includes("limit") && !msg.includes("too quickly")) {

@@ -12,6 +12,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
+import { signOut } from "next-auth/react";
 
 const NAV_LINKS = [
   { href: "/admin/users", label: "Users" },
@@ -49,7 +50,7 @@ export function AdminNav() {
 
   return (
     <>
-      {/* Desktop nav — inline links */}
+      {/* Desktop nav — inline links + logout */}
       <nav className="hidden md:flex items-center gap-1">
         {NAV_LINKS.map((link) => {
           const isActive = pathname === link.href;
@@ -67,6 +68,15 @@ export function AdminNav() {
             </Link>
           );
         })}
+        <button
+          onClick={() => signOut({ callbackUrl: "/login" })}
+          className="px-3 py-1.5 rounded-lg text-sm text-zinc-600 dark:text-zinc-400 hover:bg-black/5 dark:hover:bg-white/5 transition-colors flex items-center gap-1.5"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 1 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15M12 9l-3 3m0 0 3 3m-3-3h12.75" />
+          </svg>
+          Log Out
+        </button>
       </nav>
 
       {/* Mobile nav — hamburger + dropdown */}
@@ -120,6 +130,12 @@ export function AdminNav() {
                 </Link>
               );
             })}
+            <button
+              onClick={() => signOut({ callbackUrl: "/login" })}
+              className="block w-full text-left px-4 py-3 text-sm text-zinc-600 dark:text-zinc-400 hover:bg-black/5 dark:hover:bg-white/5 transition-colors border-t border-border"
+            >
+              Log Out
+            </button>
           </div>
         )}
       </div>

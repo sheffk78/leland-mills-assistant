@@ -11,20 +11,20 @@
 
 import { test, expect } from "@playwright/test";
 
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL ?? "admin@lelandmills.com";
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD ?? "change-me";
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL ?? "jake@lelandmills.com";
 
 test.describe("Login page", () => {
-  test("renders full logo and hero image", async ({ page }) => {
+  test("renders logo and hero image", async ({ page }) => {
     await page.goto("/login");
 
-    // Full text logo (exact match to avoid matching "Leland Mills feed products")
+    // Logo image (gold background with white logo)
     const logo = page.getByRole("img", { name: "Leland Mills", exact: true });
     await expect(logo).toBeVisible();
-    await expect(logo).toHaveAttribute("src", /leland-mills-full-logo-black-white/);
+    await expect(logo).toHaveAttribute("src", /leland-mills-logo-white/);
 
-    // Hero image from lelandmills.com
-    const hero = page.getByAltText("Leland Mills feed products");
+    // Hero image — Leland Mills facility
+    const hero = page.getByAltText("Leland Milling Company facility");
     await expect(hero).toBeVisible();
   });
 
@@ -55,11 +55,11 @@ test.describe("Login page", () => {
 
   test("shows error for invalid credentials", async ({ page }) => {
     await page.goto("/login");
-    await page.getByLabel("Email").fill("wrong@lelandmills.com");
+    await page.getByLabel("Username or Email").fill("wrong@lelandmills.com");
     await page.getByLabel("Password").fill("wrongpassword");
     await page.getByRole("button", { name: "Sign In" }).click();
 
-    await expect(page.getByText(/Invalid email or password/i)).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText(/Invalid username\/email or password/i)).toBeVisible({ timeout: 10000 });
   });
 
   test("shows First time here? onboarding section", async ({ page }) => {
@@ -78,8 +78,7 @@ test.describe("Login page", () => {
 test.describe("Login flow", () => {
   test("staff login redirects to chat page", async ({ page }) => {
     await page.goto("/login");
-    await page.getByLabel("Email").fill(ADMIN_EMAIL);
-    await page.getByLabel("Password").fill(ADMIN_PASSWORD);
+    await page.getByLabel("Username or Email").fill(ADMIN_EMAIL);
     await page.getByRole("button", { name: "Sign In" }).click();
 
     // Should redirect to /chat

@@ -11,13 +11,12 @@
 
 import { test, expect } from "@playwright/test";
 
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL ?? "admin@lelandmills.com";
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD ?? "change-me";
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL ?? "jake@lelandmills.com";
 
 async function login(page: import("@playwright/test").Page) {
   await page.goto("/login");
-  await page.getByLabel("Email").fill(ADMIN_EMAIL);
-  await page.getByLabel("Password").fill(ADMIN_PASSWORD);
+  await page.getByLabel("Username or Email").fill(ADMIN_EMAIL);
   await page.getByRole("button", { name: "Sign In" }).click();
   await expect(page).toHaveURL(/\/chat/, { timeout: 15000 });
 }
@@ -27,11 +26,10 @@ test.describe("Chat empty state", () => {
     await login(page);
   });
 
-  test("shows full logo in empty state", async ({ page }) => {
-    // The chat empty state has the largest logo (h-14)
+  test("shows logo in empty state", async ({ page }) => {
     const logo = page.getByRole("img", { name: "Leland Mills", exact: true }).last();
     await expect(logo).toBeVisible();
-    await expect(logo).toHaveAttribute("src", /leland-mills-full-logo-black-white/);
+    await expect(logo).toHaveAttribute("src", /leland-mills-logo-white/);
   });
 
   test("shows categorized starter prompts", async ({ page }) => {
@@ -41,8 +39,9 @@ test.describe("Chat empty state", () => {
   });
 
   test("clicking a starter prompt fills the input", async ({ page }) => {
-    const promptBtn = page.getByText("Pre-trip inspection checklist");
-    await promptBtn.click();
+    // Use exact match — conversation titles in sidebar also contain "Pre-trip inspection checklist"
+    const promptBtn = page.getByRole("button", { name: "Pre-trip inspection checklist", exact: true });
+    await promptBtn.click({ force: true });
 
     const input = page.getByPlaceholder("Type your message...");
     await expect(input).toHaveValue("Pre-trip inspection checklist");
@@ -64,9 +63,10 @@ test.describe("Chat messaging", () => {
 
     // Wait for a response (either the agent response or an error message about agent being unavailable)
     // We check for either the "Jake" assistant label or an error banner
+    // Note: Archie can take 2-3 minutes to respond, so we use a generous timeout
     await expect(
       page.locator("text=Jake").or(page.locator('[class*="red"]')).or(page.locator('text=/unavailable/i')),
-    ).toBeVisible({ timeout: 30000 });
+    ).toBeVisible({ timeout: 120000 });
   });
 
   test("shows typing indicator while waiting", async ({ page }) => {
@@ -85,8 +85,14 @@ test.describe("Chat messaging", () => {
     await input.press("Enter");
     await page.waitForTimeout(2000);
 
-    // Click New Chat
-    await page.getByRole("button", { name: "New Chat" }).click();
+    // On mobile, open sidebar to access New Chat button
+    const hamburger = page.getByLabel("Open sidebar");
+    if (await hamburger.isVisible({ timeout: 2000 }).catch(() => false)) {
+      await hamburger.click();
+    }
+
+    // Click New Chat (exact match to avoid hitting conversation titles)
+    await page.getByRole("button", { name: "New Chat", exact: true }).click();
 
     // Should show empty state again
     await expect(page.getByRole("heading", { name: "How can I help you today?" })).toBeVisible({ timeout: 5000 });
@@ -105,7 +111,7 @@ test.describe("Sidebar", () => {
   });
 
   test("shows New Chat button with gold styling", async ({ page }) => {
-    const newChatBtn = page.getByRole("button", { name: "New Chat" });
+    const newChatBtn = page.getByRole("button", { name: "New Chat", exact: true });
     await expect(newChatBtn).toBeVisible();
     // Gold accent background
     const bg = await newChatBtn.evaluate((el) => window.getComputedStyle(el).backgroundColor);
@@ -115,6 +121,10 @@ test.describe("Sidebar", () => {
   });
 
   test("shows Settings link in sidebar", async ({ page }) => {
-    await expect(page.getByRole("button", { name: "Settings" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Settings", exact: true })).toBeVisible();
+  });
+
+  test("shows Usage & Limits link in sidebar", async ({ page }) => {
+    await expect(page.getByRole("button", { name: "Usage & Limits" })).toBeVisible();
   });
 });

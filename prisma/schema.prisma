@@ -27,6 +27,7 @@ model User {
   knowledge         KnowledgeEntry[]
   usageLogs         UsageLog[]
   userPermissions   UserPermission[]
+  passwordResetTokens PasswordResetToken[]
 
   @@map("users")
 }
@@ -289,6 +290,24 @@ model AgentProfile {
 // ---------------------------------------------------------------------------
 // Cron jobs — scheduled tasks managed through the chat interface
 // ---------------------------------------------------------------------------
+
+// ---------------------------------------------------------------------------
+// Password reset tokens — for self-service password recovery
+// ---------------------------------------------------------------------------
+
+model PasswordResetToken {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  token     String   @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("password_reset_tokens")
+}
 
 model CronJob {
   id          String   @id @default(uuid()) @db.Uuid

@@ -12,13 +12,12 @@
 
 import { test, expect } from "@playwright/test";
 
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL ?? "admin@lelandmills.com";
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD ?? "change-me";
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL ?? "jake@lelandmills.com";
 
 async function loginAsAdmin(page: import("@playwright/test").Page) {
   await page.goto("/login");
-  await page.getByLabel("Email").fill(ADMIN_EMAIL);
-  await page.getByLabel("Password").fill(ADMIN_PASSWORD);
+  await page.getByLabel("Username or Email").fill(ADMIN_EMAIL);
   await page.getByRole("button", { name: "Sign In" }).click();
   await expect(page).toHaveURL(/\/chat/, { timeout: 15000 });
 }
@@ -79,9 +78,20 @@ test.describe("Admin access", () => {
     await loginAsAdmin(page);
     await page.goto("/admin/users");
 
+    // On mobile, open the admin nav dropdown first
+    const navToggle = page.getByLabel("Toggle navigation menu");
+    if (await navToggle.isVisible({ timeout: 2000 }).catch(() => false)) {
+      await navToggle.click();
+    }
+
     // Click Settings in nav
     await page.getByRole("link", { name: "Settings" }).click();
     await expect(page).toHaveURL(/\/admin\/settings/);
+
+    // On mobile, need to open dropdown again
+    if (await navToggle.isVisible({ timeout: 2000 }).catch(() => false)) {
+      await navToggle.click();
+    }
 
     // Click Users in nav
     await page.getByRole("link", { name: "Users" }).click();
@@ -91,6 +101,12 @@ test.describe("Admin access", () => {
   test("admin can navigate to chat from admin", async ({ page }) => {
     await loginAsAdmin(page);
     await page.goto("/admin/users");
+
+    // On mobile, open the admin nav dropdown first
+    const navToggle = page.getByLabel("Toggle navigation menu");
+    if (await navToggle.isVisible({ timeout: 2000 }).catch(() => false)) {
+      await navToggle.click();
+    }
 
     await page.getByRole("link", { name: "Chat" }).click();
     await expect(page).toHaveURL(/\/chat/);
@@ -123,8 +139,7 @@ test.describe("Mobile responsive", () => {
   test("mobile viewport shows hamburger menu", async ({ page }) => {
     await page.context().clearCookies();
     await page.goto("/login");
-    await page.getByLabel("Email").fill(ADMIN_EMAIL);
-    await page.getByLabel("Password").fill(ADMIN_PASSWORD);
+    await page.getByLabel("Username or Email").fill(ADMIN_EMAIL);
     await page.getByRole("button", { name: "Sign In" }).click();
     await expect(page).toHaveURL(/\/chat/, { timeout: 15000 });
 

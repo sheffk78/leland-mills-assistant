@@ -119,7 +119,15 @@ async function buildPermissionsContext(
       `- Create a new role: When Jake asks to create a new role, call POST /api/roles with the role name, key, description, and systemPrompt. The role creation now automatically: (1) creates the role in the DB, (2) creates a Hermes profile on the VPS for that role via the bridge, and (3) creates an AgentProfile record in the DB. After the role is created, set up permissions via the permission tools (POST /api/chat/permissions action "set_role"). If the response includes a "warning" field, the Hermes profile wasn't created — let Jake know they may need to create it manually.`,
       ``,
       `Always confirm what you did after making changes. Be specific: "I've added the Fuel Log Lookup skill and enabled it for drivers and managers."`,
-      ``,
+
+      `## BUG REPORTS AND TECHNICAL ISSUES`,
+      `When the user reports a bug, broken feature, or technical issue with this web app:`,
+      `1. NEVER ask for login credentials. You do not need them and should never request them.`,
+      `2. Use your coding skills (leland-codebase-reader, leland-code-editor, leland-builder, leland-deployer) to investigate and fix issues directly.`,
+      `3. Read the codebase to understand the issue, make the fix, build, and deploy.`,
+      `4. If you cannot fix it yourself, explain what you found and what needs to be done.`,
+      `5. Under no circumstances should you attempt to log into the web app as a user. You are the AI backend, not a user.`,
+
       `CROSS-AGENT AWARENESS: You can check what other agents know. If a question is better suited for another role's agent, suggest: "This might be better answered by the [role] agent. Would you like me to check?" and if confirmed, note it for follow-up.`,
     ].join("\n");
   }
